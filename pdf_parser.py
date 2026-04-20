@@ -1,6 +1,7 @@
 import re
 import pdfplumber
 from typing import List, Dict, Optional
+import pytesseract
 
 
 def extract_paper_info(pdf_path: str) -> Optional[Dict]:
@@ -117,3 +118,38 @@ def extract_paper_info(pdf_path: str) -> Optional[Dict]:
         'abstract': abstract,
         'conference': conference
     }
+
+
+
+def extract_full_text_smart(pdf_path: str) -> str:
+    #RAG专用 智能全文提取：优先光速直读，遇扫描版自动回退至 OCR 识别。
+
+    full_text = ""
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            if len(pdf.pages) == 0:
+                return ""
+            
+            # 遍历 PDF 的每一页
+            for i, page in enumerate(pdf.pages):
+                #优先尝试直接提取底层文本 (速度极快)
+                text = page.extract_text()
+                
+                # 如果提取出的文本极少（少于50字），我们判定这大概率是一页扫描件或纯图片
+                if not text or len(text.strip()) < 50:
+                    print(f"正在使用 OCR 深度扫描第 {i+1} 页...")
+                    
+                    # 将 PDF 当前页渲染为高分辨率图片 (300 dpi 保证 OCR 认得清)
+                    img = page.to_image(resolution=300).original
+                    
+                    # 调用 Tesseract 识别图片中的文字 (支持中文简体和英文)
+                    text = pytesseract.image_to_string(img, lang='chi_sim+eng')
+                
+                if text:
+                    full_text += text + "\n\n"
+                    
+        return full_text
+    except Exception as e:
+        print(f"RAG智能提取失败，文件路径: {pdf_path}, 错误: {e}")
+        return ""
+    
