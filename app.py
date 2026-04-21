@@ -6,6 +6,9 @@ from db_utils import save_paper_to_db, DB_CONFIG
 import pymysql
 import csv
 from io import StringIO, TextIOWrapper
+from pdf_parser import extract_paper_info, extract_full_text_smart 
+from db_utils import save_paper_to_db, DB_CONFIG
+from rag_utils import add_paper_to_vector_db 
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -29,15 +32,31 @@ def upload_paper():
     filename = secure_filename(file.filename)
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
-
+    
     try:
         info = extract_paper_info(filepath)
         if not info:
-            return jsonify({'error': 'Failed to extract info'}), 500
+            return jsonify({'error': 'Failed to extract metadata'}), 500
         paper_id = save_paper_to_db(info, filepath)
-        return jsonify({'paper_id': paper_id, 'extracted': info}), 200
+        
+        print(f"开始为论文 ID {paper_id} 构建全文向量索引...")
+        # 1. 提取全文 (遇到图片会自动触发 OCR)
+        full_text = extract_full_text_smart(filepath)
+        
+        is_success = add_paper_to_vector_db(paper_id, full_text)
+        
+        if is_success:
+            return jsonify({
+                'paper_id': paper_id, 
+                'extracted': info,
+                'msg': '文件上传成功，结构化数据与全文向量库均已更新！'
+            }), 200
+        else:
+            return jsonify({'error': '全文向量化失败，但元数据已存入数据库'}), 500
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/search/author', methods=['GET'])
 def search_author():

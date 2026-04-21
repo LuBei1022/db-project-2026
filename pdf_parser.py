@@ -152,4 +152,6 @@ def extract_full_text_smart(pdf_path: str) -> str:
     except Exception as e:
         print(f"RAG智能提取失败，文件路径: {pdf_path}, 错误: {e}")
         return ""
-    
+
+if __name__ == "__main__":
+    print(extract_full_text_smart('/Users/luke/Desktop/2506.07398v2.pdf'))
