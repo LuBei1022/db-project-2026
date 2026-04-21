@@ -53,3 +53,50 @@ def add_paper_to_vector_db(paper_id: int, full_text: str):
     except Exception as e:
         print(f"存入向量库失败，论文 ID {paper_id}，错误: {e}")
         return False
+
+def get_vector_db():
+    #加载已有的 Chroma 向量数据库实例
+
+    return Chroma(
+        persist_directory=CHROMA_PERSIST_DIR, 
+        embedding_function=embeddings
+    )
+
+def search_similar_texts(query: str, paper_id: int = None, k: int = 3):
+    """
+    根据用户的问题，在向量数据库中进行语义检索。
+    
+    参数:
+    - query: 用户的提问 (字符串)
+    - paper_id: (可选) 如果传入此ID，则只在这篇论文内部搜索
+    - k: 返回最相关的文本块数量，默认取前 3 个
+    """
+    if not query.strip():
+        return []
+        
+    vector_db = get_vector_db()
+    
+    # 构建过滤条件：如果前端传了 paper_id，就利用 Metadata 精准过滤
+    filter_dict = {"paper_id": paper_id} if paper_id else None
+    
+    try:
+        # 执行相似度搜索
+        results = vector_db.similarity_search(
+            query=query, 
+            k=k, 
+            filter=filter_dict
+        )
+        
+        # 将检索到的 Document 对象格式化为字典列表，方便传给前端
+        formatted_results = []
+        for doc in results:
+            formatted_results.append({
+                "content": doc.page_content,
+                "paper_id": doc.metadata.get("paper_id")
+            })
+            
+        return formatted_results
+        
+    except Exception as e:
+        print(f"语义检索失败，错误: {e}")
+        return []

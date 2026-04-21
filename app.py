@@ -8,7 +8,7 @@ import csv
 from io import StringIO, TextIOWrapper
 from pdf_parser import extract_paper_info, extract_full_text_smart 
 from db_utils import save_paper_to_db, DB_CONFIG
-from rag_utils import add_paper_to_vector_db 
+from rag_utils import add_paper_to_vector_db, search_similar_texts
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -137,6 +137,22 @@ def import_csv():
     cursor.close()
     conn.close()
     return jsonify({'inserted': inserted}), 200
+
+@app.route('/rag/search', methods=['GET'])
+def rag_search():
+    query = request.args.get('q', '')
+    paper_id = request.args.get('paper_id', type=int) 
+    
+    if not query:
+        return jsonify({'error': '缺少查询内容 (q)'}), 400
+        
+    results = search_similar_texts(query=query, paper_id=paper_id)
+    
+    return jsonify({
+        'query': query,
+        'target_paper_id': paper_id if paper_id else '全局搜索',
+        'results': results
+    }), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5050)
