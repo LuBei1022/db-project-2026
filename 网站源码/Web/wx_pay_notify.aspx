@@ -1,0 +1,1 @@
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="wx_pay_notify.aspx.cs" Inherits="Web.wx_pay_notify" %>

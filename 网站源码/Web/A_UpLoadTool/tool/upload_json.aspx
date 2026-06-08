@@ -1,0 +1,1 @@
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="upload_json.aspx.cs" Inherits="Web.A_UpLoadTool.tool.upload_json" %>

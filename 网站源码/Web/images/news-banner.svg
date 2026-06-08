@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="360" viewBox="0 0 1920 360" role="img" aria-label="Academic literature banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d4f86"/>
+      <stop offset=".52" stop-color="#4179b5"/>
+      <stop offset="1" stop-color="#7fb4d6"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eaf3fb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="360" fill="url(#bg)"/>
+  <circle cx="1620" cy="92" r="128" fill="#ffffff" opacity=".12"/>
+  <circle cx="250" cy="312" r="180" fill="#0f2f55" opacity=".16"/>
+  <g transform="translate(1180 58)" opacity=".95">
+    <rect x="0" y="28" width="270" height="190" rx="18" fill="url(#paper)"/>
+    <rect x="32" y="68" width="162" height="12" rx="6" fill="#2e5f95" opacity=".68"/>
+    <rect x="32" y="100" width="206" height="10" rx="5" fill="#7fa6c8" opacity=".72"/>
+    <rect x="32" y="128" width="184" height="10" rx="5" fill="#7fa6c8" opacity=".6"/>
+    <rect x="32" y="156" width="118" height="10" rx="5" fill="#7fa6c8" opacity=".52"/>
+  </g>
+  <g transform="translate(1432 88)" opacity=".92">
+    <rect x="0" y="22" width="230" height="164" rx="16" fill="#f8fbff"/>
+    <path d="M32 128c30-56 74-74 126-34 20 15 34 22 52 20v44H32z" fill="#75a6cb" opacity=".9"/>
+    <circle cx="168" cy="66" r="22" fill="#f4c766"/>
+  </g>
+  <g transform="translate(340 78)" fill="none" stroke="#ffffff" stroke-width="8" opacity=".42">
+    <path d="M0 42h132M0 92h220M0 142h180"/>
+    <circle cx="270" cy="94" r="54"/>
+    <path d="M310 134l58 58"/>
+  </g>
+</svg>

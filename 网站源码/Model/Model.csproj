@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{282233FA-7DE7-4FA2-9A12-CB980895C4E8}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Model</RootNamespace>
+    <AssemblyName>Model</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="admin.cs" />
+    <Compile Include="WorkflowTaskCommentImage_list.cs" />
+    <Compile Include="WorkflowTaskReplyImage_list.cs" />
+    <Compile Include="WorkflowTaskReply_list.cs" />
+    <Compile Include="WorkflowTaskReaction_list.cs" />
+    <Compile Include="WorkflowTaskComment_list.cs" />
+    <Compile Include="Author.cs" />
+    <Compile Include="appealimg_list.cs" />
+    <Compile Include="appeal_list.cs" />
+    <Compile Include="cosfile_list.cs" />
+    <Compile Include="daoruerr_list.cs" />
+    <Compile Include="daoru_list.cs" />
+    <Compile Include="data_list.cs" />
+    <Compile Include="indexsingle_list.cs" />
+    <Compile Include="Literature.cs" />
+    <Compile Include="LiteratureAuthorMap.cs" />
+    <Compile Include="LiteratureCategory.cs" />
+    <Compile Include="LiteratureDownloadLog.cs" />
+    <Compile Include="LiteratureExportLog.cs" />
+    <Compile Include="LiteratureFavorite.cs" />
+    <Compile Include="LiteratureFile.cs" />
+    <Compile Include="LiteratureImportBatch.cs" />
+    <Compile Include="LiteratureImportError.cs" />
+    <Compile Include="LiteratureLike.cs" />
+    <Compile Include="LiteratureComment.cs" />
+    <Compile Include="LiteratureVenueProfile.cs" />
+    <Compile Include="LiteratureTag.cs" />
+    <Compile Include="LiteratureTagMap.cs" />
+    <Compile Include="integrateExchangeLog_list.cs" />
+    <Compile Include="integrateLogType_list.cs" />
+    <Compile Include="integrateLog_list.cs" />
+    <Compile Include="integratestatus_list.cs" />
+    <Compile Include="integrate_list.cs" />
+    <Compile Include="link_list.cs" />
+    <Compile Include="logincode_list.cs" />
+    <Compile Include="LoginSingle_List.cs" />
+    <Compile Include="model_list.cs" />
+    <Compile Include="NoticeLogStatus_List.cs" />
+    <Compile Include="NoticeLogType_List.cs" />
+    <Compile Include="NoticeLog_List.cs" />
+    <Compile Include="popedom.cs" />
+    <Compile Include="popedomhead.cs" />
+    <Compile Include="ResourceClass1_List.cs" />
+    <Compile Include="ResourceClass2_List.cs" />
+    <Compile Include="ResourceClass3_List.cs" />
+    <Compile Include="ResourceCollect_List.cs" />
+    <Compile Include="ResourceCopy_list.cs" />
+    <Compile Include="ResourceDataCopy_list.cs" />
+    <Compile Include="ResourceDataImgCopy_list.cs" />
+    <Compile Include="ResourceDataInfoCopy_list.cs" />
+    <Compile Include="ResourceDataInfoDataCopy_list.cs" />
+    <Compile Include="ResourceData_list.cs" />
+    <Compile Include="ResourceDownloadLog_List.cs" />
+    <Compile Include="ResourceLicense_List.cs" />
+    <Compile Include="ResourceFormatTag_List.cs" />
+    <Compile Include="ResourceFormat_List.cs" />
+    <Compile Include="ResourceCommentImg_list.cs" />
+    <Compile Include="ResourceCommentReplyImg_list.cs" />
+    <Compile Include="ResourceCommentReply_list.cs" />
+    <Compile Include="ResourceCommentLike_List.cs" />
+    <Compile Include="ResourceComment_list.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResourceSearchLog_list.cs" />
+    <Compile Include="ResourceTag_List.cs" />
+    <Compile Include="ResourceHomeClassData_List.cs" />
+    <Compile Include="ResourceLike_List.cs" />
+    <Compile Include="Resource_list.cs" />
+    <Compile Include="SearchHot_List.cs" />
+    <Compile Include="ServiceLogInfo_List.cs" />
+    <Compile Include="ServiceLogStatus_List.cs" />
+    <Compile Include="ServiceLog_List.cs" />
+    <Compile Include="tbl_class.cs" />
+    <Compile Include="telcode_list.cs" />
+    <Compile Include="TopUpType_List.cs" />
+    <Compile Include="GeneratedAssetRecord_list.cs" />
+    <Compile Include="userfile_list.cs" />
+    <Compile Include="userimg_list.cs" />
+    <Compile Include="user_list.cs" />
+    <Compile Include="user_login.cs" />
+    <Compile Include="websiteinfo_list.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

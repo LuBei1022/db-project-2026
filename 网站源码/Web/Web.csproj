@@ -1,0 +1,2220 @@
+﻿<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.Default.props" Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.Default.props')" />
+  <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>
+    </ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{7631A421-45C4-4C4B-AEAC-C9143EEF0A05}</ProjectGuid>
+    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Web</RootNamespace>
+    <AssemblyName>Web</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <UseIISExpress>true</UseIISExpress>
+    <Use64BitIISExpress />
+    <IISExpressSSLPort>44383</IISExpressSSLPort>
+    <IISExpressAnonymousAuthentication />
+    <IISExpressWindowsAuthentication />
+    <IISExpressUseClassicPipelineMode />
+    <UseGlobalApplicationHostFile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+    <TypeScriptToolsVersion>3.8</TypeScriptToolsVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AspNetPager">
+      <HintPath>..\bin\AspNetPager.dll</HintPath>
+    </Reference>
+    <Reference Include="LitJSON">
+      <HintPath>..\bin\LitJSON.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Office.Interop.Excel, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Office.Interop.Excel.15.0.4795.1001\lib\net20\Microsoft.Office.Interop.Excel.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Web.DynamicData" />
+    <Reference Include="System.Web.Entity" />
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Web.Services" />
+    <Reference Include="System.EnterpriseServices" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="UrlRewritingNet.UrlRewriter">
+      <HintPath>..\bin\UrlRewritingNet.UrlRewriter.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform">
+      <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>    <Content Include="admin\Admin_DaoRuInfo.aspx" />
+    <Content Include="admin\Admin_IntegrateAdd.aspx" />
+    <Content Include="admin\Admin_IntegrateLogList.aspx" />
+    <Content Include="admin\Admin_AppealList.aspx" />    <Content Include="admin\Admin_IndexSingleList.aspx" />
+    <Content Include="admin\Admin_IntegrateExchangeLog.aspx" />
+    <Content Include="admin\Admin_IntegrateList.aspx" />
+    <Content Include="admin\Admin_IntegrateLogTypeList.aspx" />
+    <Content Include="admin\Admin_IntegrateRedemptionList.aspx" />
+    <Content Include="admin\Admin_IntegrateWithdrawalConfigure.aspx" />
+    <Content Include="admin\Admin_LiteratureCategory.aspx" />
+    <Content Include="admin\Admin_LiteratureCommentList.aspx" />
+    <Content Include="admin\Admin_LiteratureEdit.aspx" />
+    <Content Include="admin\Admin_LiteratureInfo.aspx" />
+    <Content Include="admin\Admin_LiteratureImport.aspx" />
+    <Content Include="admin\Admin_LiteratureImportError.aspx" />
+    <Content Include="admin\Admin_LiteratureList.aspx" />
+    <Content Include="admin\Admin_LiteratureTag.aspx" />
+    <Content Include="admin\Admin_LiteratureVenueProfile.aspx" />
+    <Content Include="admin\Admin_LoginSingle.aspx" />
+    <Content Include="admin\Admin_Admin.aspx" />
+    <Content Include="admin\Admin_AdminUpPwd.aspx" />    <Content Include="admin\Admin_DataImgInfo.aspx" />
+    <Content Include="admin\Admin_FootIconLinkList.aspx" />
+    <Content Include="admin\Admin_LinkType.aspx" />
+    <Content Include="admin\Admin_Log.aspx" />
+    <Content Include="admin\Admin_Model.aspx" />
+    <Content Include="admin\Admin_Null.aspx" />
+                                                                <Content Include="admin\Admin_SearchHotList.aspx" />
+    <Content Include="admin\Admin_ServerInfo.aspx" />
+    <Content Include="admin\Admin_ServiceLogInfo.aspx" />
+    <Content Include="admin\Admin_ServiceLogList.aspx" />
+    <Content Include="admin\Admin_SiteInfo.aspx" />
+    <Content Include="admin\Admin_SiteMenu.aspx" />
+    <Content Include="admin\Admin_TopUpTypeConfigure.aspx" />
+    <Content Include="admin\Admin_TopUpTypeList.aspx" />
+    <Content Include="admin\Admin_WebsiteEmail.aspx" />
+    <Content Include="admin\Admin_WebsiteInfo.aspx" />
+    <Content Include="admin\class_menu.ascx" />
+    <Content Include="admin\Code.aspx" />
+    <Content Include="admin\css\adminlte.css" />
+    <Content Include="admin\css\adminlte.min.css" />
+    <Content Include="admin\css\adminlte.rtl.css" />
+    <Content Include="admin\css\adminlte.rtl.min.css" />
+    <Content Include="admin\css\bootstrap-icons.min.css" />
+    <Content Include="admin\css\closebutton.png" />
+    <Content Include="admin\css\imgstyle.css" />
+    <Content Include="admin\css\index.css" />
+    <Content Include="admin\css\laydate.css" />
+    <Content Include="admin\css\layui.css" />
+    <Content Include="admin\css\loading.gif" />
+    <Content Include="admin\css\navbtns.png" />
+    <Content Include="admin\css\overlayscrollbars.min.css" />
+    <Content Include="admin\css\page.css" />
+    <Content Include="admin\css\style.css" />
+    <Content Include="admin\css\style_new.css" />
+    <Content Include="admin\css\zTreeStyle.css" />
+    <Content Include="admin\fonts\bootstrap-icons.woff" />
+    <Content Include="admin\fonts\bootstrap-icons.woff2" />
+    <Content Include="admin\fonts\iconfont.svg" />
+    <Content Include="admin\fonts\source-sans-3-cyrillic-400-normal.woff" />
+    <Content Include="admin\fonts\source-sans-3-cyrillic-400-normal.woff2" />
+    <Content Include="admin\fonts\source-sans-3-cyrillic-ext-400-normal.woff" />
+    <Content Include="admin\fonts\source-sans-3-cyrillic-ext-400-normal.woff2" />
+    <Content Include="admin\fonts\source-sans-3-greek-400-normal.woff" />
+    <Content Include="admin\fonts\source-sans-3-greek-400-normal.woff2" />
+    <Content Include="admin\fonts\source-sans-3-greek-ext-400-normal.woff" />
+    <Content Include="admin\fonts\source-sans-3-greek-ext-400-normal.woff2" />
+    <Content Include="admin\fonts\source-sans-3-latin-400-normal.woff" />
+    <Content Include="admin\fonts\source-sans-3-latin-400-normal.woff2" />
+    <Content Include="admin\fonts\source-sans-3-latin-ext-400-normal.woff" />
+    <Content Include="admin\fonts\source-sans-3-latin-ext-400-normal.woff2" />
+    <Content Include="admin\fonts\source-sans-3-vietnamese-400-normal.woff" />
+    <Content Include="admin\fonts\source-sans-3-vietnamese-400-normal.woff2" />
+    <Content Include="admin\iconfont\demo.css" />
+    <Content Include="admin\iconfont\demo_index.html" />
+    <Content Include="admin\iconfont\iconfont.css" />
+    <Content Include="admin\iconfont\iconfont.js" />
+    <Content Include="admin\images\del.png" />
+    <Content Include="admin\images\Failure.gif" />
+    <Content Include="admin\images\information.gif" />
+    <Content Include="admin\images\loading.gif" />
+    <Content Include="admin\images\load_small.gif" />
+    <Content Include="admin\images\no.gif" />
+    <Content Include="admin\images\nophoto.gif" />
+    <Content Include="admin\images\OK.gif" />
+    <Content Include="admin\images\pwd-1.png" />
+    <Content Include="admin\images\pwd-2.png" />
+    <Content Include="admin\images\Refresh.png" />
+    <Content Include="admin\images\waiting.gif" />
+    <Content Include="admin\images\yes.gif" />
+    <Content Include="admin\images\zTreeStandard.png" />
+    <Content Include="admin\Inc.ascx" />
+    <Content Include="admin\Index.aspx" />
+    <Content Include="admin\Jsmenu.ascx" />
+    <Content Include="admin\js\adminlte.js" />
+    <Content Include="admin\js\adminlte.js.map" />
+    <Content Include="admin\js\adminlte.min.js" />
+    <Content Include="admin\js\adminlte.min.js.map" />
+    <Content Include="admin\js\bootstrap.min.js" />
+    <Content Include="admin\js\jquery-1.8.3.min.js" />
+    <Content Include="admin\js\jquery.ztree.core.min.js" />
+    <Content Include="admin\js\JScript.js" />
+    <Content Include="admin\js\laydate.js" />
+    <Content Include="admin\js\layui.css" />
+    <Content Include="admin\js\layui.js" />
+    <Content Include="admin\js\lib\es6-promise.min.js" />
+    <Content Include="admin\js\overlayscrollbars.browser.es6.min.js" />
+    <Content Include="admin\js\picbox.js" />
+    <Content Include="admin\js\popper.min.js" />
+    <Content Include="admin\js\script.js" />
+    <Content Include="admin\js\file.js" />
+    <Content Include="admin\js\scriptfile.js" />
+    <Content Include="admin\js\scriptvideo.js" />
+    <Content Include="admin\Left.aspx" />
+    <Content Include="admin\load.aspx" />
+    <Content Include="admin\Login.aspx" />
+    <Content Include="admin\Right.aspx" />
+    <Content Include="A_Uploadify\jquery.uploadify.js" />
+    <Content Include="A_Uploadify\select.gif" />
+    <Content Include="A_Uploadify\select_over.gif" />
+    <Content Include="A_Uploadify\swfobject.js" />
+    <Content Include="A_Uploadify\UpDownloadHandler.aspx" />
+    <Content Include="A_Uploadify\uploadify-cancel.gif" />
+    <Content Include="A_Uploadify\uploadify.css" />
+    <Content Include="A_Uploadify\uploadify.swf" />
+    <Content Include="A_UpLoadTool\kindeditor-all-min.js" />
+    <Content Include="A_UpLoadTool\kindeditor-all.js" />
+    <Content Include="A_UpLoadTool\kindeditor-min.js" />
+    <Content Include="A_UpLoadTool\kindeditor.js" />
+    <Content Include="A_UpLoadTool\kindeditorsss.js" />
+    <Content Include="A_UpLoadTool\lang\ar.js" />
+    <Content Include="A_UpLoadTool\lang\en.js" />
+    <Content Include="A_UpLoadTool\lang\ko.js" />
+    <Content Include="A_UpLoadTool\lang\zh_CN.js" />
+    <Content Include="A_UpLoadTool\lang\zh_TW.js" />
+    <Content Include="A_UpLoadTool\plugins\anchor\anchor.js" />
+    <Content Include="A_UpLoadTool\plugins\autoheight\autoheight.js" />
+    <Content Include="A_UpLoadTool\plugins\clearhtml\clearhtml.js" />
+    <Content Include="A_UpLoadTool\plugins\code\code.js" />
+    <Content Include="A_UpLoadTool\plugins\code\prettify.css" />
+    <Content Include="A_UpLoadTool\plugins\code\prettify.js" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\emoticons.js" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\0.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\1.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\10.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\100.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\101.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\102.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\103.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\104.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\105.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\106.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\107.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\108.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\109.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\11.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\110.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\111.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\112.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\113.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\114.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\115.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\116.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\117.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\118.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\119.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\12.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\120.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\121.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\122.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\123.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\124.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\125.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\126.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\127.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\128.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\129.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\13.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\130.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\131.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\132.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\133.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\134.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\14.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\15.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\16.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\17.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\18.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\19.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\2.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\20.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\21.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\22.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\23.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\24.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\25.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\26.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\27.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\28.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\29.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\3.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\30.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\31.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\32.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\33.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\34.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\35.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\36.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\37.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\38.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\39.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\4.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\40.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\41.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\42.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\43.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\44.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\45.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\46.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\47.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\48.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\49.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\5.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\50.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\51.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\52.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\53.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\54.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\55.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\56.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\57.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\58.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\59.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\6.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\60.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\61.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\62.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\63.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\64.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\65.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\66.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\67.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\68.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\69.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\7.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\70.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\71.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\72.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\73.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\74.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\75.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\76.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\77.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\78.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\79.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\8.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\80.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\81.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\82.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\83.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\84.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\85.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\86.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\87.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\88.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\89.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\9.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\90.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\91.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\92.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\93.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\94.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\95.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\96.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\97.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\98.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\99.gif" />
+    <Content Include="A_UpLoadTool\plugins\emoticons\images\static.gif" />
+    <Content Include="A_UpLoadTool\plugins\filemanager\filemanager.js" />
+    <Content Include="A_UpLoadTool\plugins\filemanager\images\file-16.gif" />
+    <Content Include="A_UpLoadTool\plugins\filemanager\images\file-64.gif" />
+    <Content Include="A_UpLoadTool\plugins\filemanager\images\folder-16.gif" />
+    <Content Include="A_UpLoadTool\plugins\filemanager\images\folder-64.gif" />
+    <Content Include="A_UpLoadTool\plugins\filemanager\images\go-up.gif" />
+    <Content Include="A_UpLoadTool\plugins\flash\flash.js" />
+    <Content Include="A_UpLoadTool\plugins\flv.swf" />
+    <Content Include="A_UpLoadTool\plugins\htmlfvideo\htmlfvideo.js" />
+    <Content Include="A_UpLoadTool\plugins\image\image.js" />
+    <Content Include="A_UpLoadTool\plugins\image\images\align_left.gif" />
+    <Content Include="A_UpLoadTool\plugins\image\images\align_right.gif" />
+    <Content Include="A_UpLoadTool\plugins\image\images\align_top.gif" />
+    <Content Include="A_UpLoadTool\plugins\image\images\refresh.png" />
+    <Content Include="A_UpLoadTool\plugins\insertfile\insertfile.js" />
+    <Content Include="A_UpLoadTool\plugins\lineheight\lineheight.js" />
+    <Content Include="A_UpLoadTool\plugins\link\link.js" />
+    <Content Include="A_UpLoadTool\plugins\map\map.html" />
+    <Content Include="A_UpLoadTool\plugins\map\map.js" />
+    <Content Include="A_UpLoadTool\plugins\media\media.js" />
+    <Content Include="A_UpLoadTool\plugins\media\mediasss.js" />
+    <Content Include="A_UpLoadTool\plugins\multiimage\images\image.png" />
+    <Content Include="A_UpLoadTool\plugins\multiimage\images\select-files-en.png" />
+    <Content Include="A_UpLoadTool\plugins\multiimage\images\select-files-zh_CN.png" />
+    <Content Include="A_UpLoadTool\plugins\multiimage\images\swfupload.swf" />
+    <Content Include="A_UpLoadTool\plugins\multiimage\images\webuploader.js" />
+    <Content Include="A_UpLoadTool\plugins\multiimage\multiimage.js" />
+    <Content Include="A_UpLoadTool\plugins\multiimage\multiimage_bak.js" />
+    <Content Include="A_UpLoadTool\plugins\pagebreak\pagebreak.js" />
+    <Content Include="A_UpLoadTool\plugins\plainpaste\plainpaste.js" />
+    <Content Include="A_UpLoadTool\plugins\preview\preview.js" />
+    <Content Include="A_UpLoadTool\plugins\quickformat\quickformat.js" />
+    <Content Include="A_UpLoadTool\plugins\table\table.js" />
+    <Content Include="A_UpLoadTool\plugins\template\html\1.html" />
+    <Content Include="A_UpLoadTool\plugins\template\html\2.html" />
+    <Content Include="A_UpLoadTool\plugins\template\html\3.html" />
+    <Content Include="A_UpLoadTool\plugins\template\template.js" />
+    <Content Include="A_UpLoadTool\plugins\wordpaste\wordpaste.js" />
+    <Content Include="A_UpLoadTool\themes\common\anchor.gif" />
+    <Content Include="A_UpLoadTool\themes\common\blank.gif" />
+    <Content Include="A_UpLoadTool\themes\common\flash.gif" />
+    <Content Include="A_UpLoadTool\themes\common\loading.gif" />
+    <Content Include="A_UpLoadTool\themes\common\media.gif" />
+    <Content Include="A_UpLoadTool\themes\common\rm.gif" />
+    <Content Include="A_UpLoadTool\themes\default\background.png" />
+    <Content Include="A_UpLoadTool\themes\default\default.css" />
+    <Content Include="A_UpLoadTool\themes\default\default.png" />
+    <Content Include="A_UpLoadTool\themes\qq\editor.gif" />
+    <Content Include="A_UpLoadTool\themes\qq\qq.css" />
+    <Content Include="A_UpLoadTool\themes\simple\simple.css" />
+    <Content Include="A_UpLoadTool\tool\upload_json.aspx" />
+    <Content Include="code_tel.ascx" />
+    <Content Include="css.ascx" />
+    <Content Include="css\layui.css" />
+    <Content Include="css\media.css" />
+    <Content Include="css\style.css" />
+    <Content Include="css\swiper-bundle.min.css" />
+    <Content Include="err.aspx" />
+    <Content Include="fonts\iconfont.svg" />
+    <Content Include="foot.ascx" />
+    <Content Include="images\clss.png" />
+    <Content Include="images\del.png" />
+    <Content Include="images\dianzan.png" />
+    <Content Include="images\dianzan_h.png" />
+    <Content Include="images\duihuan.png" />
+    <Content Include="images\fabu.png" />
+    <Content Include="images\gongdan1.png" />
+    <Content Include="images\huifu.png" />
+    <Content Include="images\huo.png" />
+    <Content Include="images\jiazai.gif" />
+    <Content Include="images\img\img %281%29.jpeg" />
+    <Content Include="images\img\img %2810%29.jpeg" />
+    <Content Include="images\img\img %28100%29.jpeg" />
+    <Content Include="images\img\img %281000%29.jpeg" />
+    <Content Include="images\img\img %281001%29.jpeg" />
+    <Content Include="images\img\img %281002%29.jpeg" />
+    <Content Include="images\img\img %281003%29.jpeg" />
+    <Content Include="images\img\img %281004%29.jpeg" />
+    <Content Include="images\img\img %281005%29.jpeg" />
+    <Content Include="images\img\img %281006%29.jpeg" />
+    <Content Include="images\img\img %281007%29.jpeg" />
+    <Content Include="images\img\img %281008%29.jpeg" />
+    <Content Include="images\img\img %281009%29.jpeg" />
+    <Content Include="images\img\img %28101%29.jpeg" />
+    <Content Include="images\img\img %281010%29.jpeg" />
+    <Content Include="images\img\img %281011%29.jpeg" />
+    <Content Include="images\img\img %281012%29.jpeg" />
+    <Content Include="images\img\img %28102%29.jpeg" />
+    <Content Include="images\img\img %28103%29.jpeg" />
+    <Content Include="images\img\img %28104%29.jpeg" />
+    <Content Include="images\img\img %28105%29.jpeg" />
+    <Content Include="images\img\img %28106%29.jpeg" />
+    <Content Include="images\img\img %28107%29.jpeg" />
+    <Content Include="images\img\img %28108%29.jpeg" />
+    <Content Include="images\img\img %28109%29.jpeg" />
+    <Content Include="images\img\img %2811%29.jpeg" />
+    <Content Include="images\img\img %28110%29.jpeg" />
+    <Content Include="images\img\img %28111%29.jpeg" />
+    <Content Include="images\img\img %28112%29.jpeg" />
+    <Content Include="images\img\img %28113%29.jpeg" />
+    <Content Include="images\img\img %28114%29.jpeg" />
+    <Content Include="images\img\img %28115%29.jpeg" />
+    <Content Include="images\img\img %28116%29.jpeg" />
+    <Content Include="images\img\img %28117%29.jpeg" />
+    <Content Include="images\img\img %28118%29.jpeg" />
+    <Content Include="images\img\img %28119%29.jpeg" />
+    <Content Include="images\img\img %2812%29.jpeg" />
+    <Content Include="images\img\img %28120%29.jpeg" />
+    <Content Include="images\img\img %28121%29.jpeg" />
+    <Content Include="images\img\img %28122%29.jpeg" />
+    <Content Include="images\img\img %28123%29.jpeg" />
+    <Content Include="images\img\img %28124%29.jpeg" />
+    <Content Include="images\img\img %28125%29.jpeg" />
+    <Content Include="images\img\img %28126%29.jpeg" />
+    <Content Include="images\img\img %28127%29.jpeg" />
+    <Content Include="images\img\img %28128%29.jpeg" />
+    <Content Include="images\img\img %28129%29.jpeg" />
+    <Content Include="images\img\img %2813%29.jpeg" />
+    <Content Include="images\img\img %28130%29.jpeg" />
+    <Content Include="images\img\img %28131%29.jpeg" />
+    <Content Include="images\img\img %28132%29.jpeg" />
+    <Content Include="images\img\img %28133%29.jpeg" />
+    <Content Include="images\img\img %28134%29.jpeg" />
+    <Content Include="images\img\img %28135%29.jpeg" />
+    <Content Include="images\img\img %28136%29.jpeg" />
+    <Content Include="images\img\img %28137%29.jpeg" />
+    <Content Include="images\img\img %28138%29.jpeg" />
+    <Content Include="images\img\img %28139%29.jpeg" />
+    <Content Include="images\img\img %2814%29.jpeg" />
+    <Content Include="images\img\img %28140%29.jpeg" />
+    <Content Include="images\img\img %28141%29.jpeg" />
+    <Content Include="images\img\img %28142%29.jpeg" />
+    <Content Include="images\img\img %28143%29.jpeg" />
+    <Content Include="images\img\img %28144%29.jpeg" />
+    <Content Include="images\img\img %28145%29.jpeg" />
+    <Content Include="images\img\img %28146%29.jpeg" />
+    <Content Include="images\img\img %28147%29.jpeg" />
+    <Content Include="images\img\img %28148%29.jpeg" />
+    <Content Include="images\img\img %28149%29.jpeg" />
+    <Content Include="images\img\img %2815%29.jpeg" />
+    <Content Include="images\img\img %28150%29.jpeg" />
+    <Content Include="images\img\img %28151%29.jpeg" />
+    <Content Include="images\img\img %28152%29.jpeg" />
+    <Content Include="images\img\img %28153%29.jpeg" />
+    <Content Include="images\img\img %28154%29.jpeg" />
+    <Content Include="images\img\img %28155%29.jpeg" />
+    <Content Include="images\img\img %28156%29.jpeg" />
+    <Content Include="images\img\img %28157%29.jpeg" />
+    <Content Include="images\img\img %28158%29.jpeg" />
+    <Content Include="images\img\img %28159%29.jpeg" />
+    <Content Include="images\img\img %2816%29.jpeg" />
+    <Content Include="images\img\img %28160%29.jpeg" />
+    <Content Include="images\img\img %28161%29.jpeg" />
+    <Content Include="images\img\img %28162%29.jpeg" />
+    <Content Include="images\img\img %28163%29.jpeg" />
+    <Content Include="images\img\img %28164%29.jpeg" />
+    <Content Include="images\img\img %28165%29.jpeg" />
+    <Content Include="images\img\img %28166%29.jpeg" />
+    <Content Include="images\img\img %28167%29.jpeg" />
+    <Content Include="images\img\img %28168%29.jpeg" />
+    <Content Include="images\img\img %28169%29.jpeg" />
+    <Content Include="images\img\img %2817%29.jpeg" />
+    <Content Include="images\img\img %28170%29.jpeg" />
+    <Content Include="images\img\img %28171%29.jpeg" />
+    <Content Include="images\img\img %28172%29.jpeg" />
+    <Content Include="images\img\img %28173%29.jpeg" />
+    <Content Include="images\img\img %28174%29.jpeg" />
+    <Content Include="images\img\img %28175%29.jpeg" />
+    <Content Include="images\img\img %28176%29.jpeg" />
+    <Content Include="images\img\img %28177%29.jpeg" />
+    <Content Include="images\img\img %28178%29.jpeg" />
+    <Content Include="images\img\img %28179%29.jpeg" />
+    <Content Include="images\img\img %2818%29.jpeg" />
+    <Content Include="images\img\img %28180%29.jpeg" />
+    <Content Include="images\img\img %28181%29.jpeg" />
+    <Content Include="images\img\img %28182%29.jpeg" />
+    <Content Include="images\img\img %28183%29.jpeg" />
+    <Content Include="images\img\img %28184%29.jpeg" />
+    <Content Include="images\img\img %28185%29.jpeg" />
+    <Content Include="images\img\img %28186%29.jpeg" />
+    <Content Include="images\img\img %28187%29.jpeg" />
+    <Content Include="images\img\img %28188%29.jpeg" />
+    <Content Include="images\img\img %28189%29.jpeg" />
+    <Content Include="images\img\img %2819%29.jpeg" />
+    <Content Include="images\img\img %28190%29.jpeg" />
+    <Content Include="images\img\img %28191%29.jpeg" />
+    <Content Include="images\img\img %28192%29.jpeg" />
+    <Content Include="images\img\img %28193%29.jpeg" />
+    <Content Include="images\img\img %28194%29.jpeg" />
+    <Content Include="images\img\img %28195%29.jpeg" />
+    <Content Include="images\img\img %28196%29.jpeg" />
+    <Content Include="images\img\img %28197%29.jpeg" />
+    <Content Include="images\img\img %28198%29.jpeg" />
+    <Content Include="images\img\img %28199%29.jpeg" />
+    <Content Include="images\img\img %282%29.jpeg" />
+    <Content Include="images\img\img %2820%29.jpeg" />
+    <Content Include="images\img\img %28200%29.jpeg" />
+    <Content Include="images\img\img %28201%29.jpeg" />
+    <Content Include="images\img\img %28202%29.jpeg" />
+    <Content Include="images\img\img %28203%29.jpeg" />
+    <Content Include="images\img\img %28204%29.jpeg" />
+    <Content Include="images\img\img %28205%29.jpeg" />
+    <Content Include="images\img\img %28206%29.jpeg" />
+    <Content Include="images\img\img %28207%29.jpeg" />
+    <Content Include="images\img\img %28208%29.jpeg" />
+    <Content Include="images\img\img %28209%29.jpeg" />
+    <Content Include="images\img\img %2821%29.jpeg" />
+    <Content Include="images\img\img %28210%29.jpeg" />
+    <Content Include="images\img\img %28211%29.jpeg" />
+    <Content Include="images\img\img %28212%29.jpeg" />
+    <Content Include="images\img\img %28213%29.jpeg" />
+    <Content Include="images\img\img %28214%29.jpeg" />
+    <Content Include="images\img\img %28215%29.jpeg" />
+    <Content Include="images\img\img %28216%29.jpeg" />
+    <Content Include="images\img\img %28217%29.jpeg" />
+    <Content Include="images\img\img %28218%29.jpeg" />
+    <Content Include="images\img\img %28219%29.jpeg" />
+    <Content Include="images\img\img %2822%29.jpeg" />
+    <Content Include="images\img\img %28220%29.jpeg" />
+    <Content Include="images\img\img %28221%29.jpeg" />
+    <Content Include="images\img\img %28222%29.jpeg" />
+    <Content Include="images\img\img %28223%29.jpeg" />
+    <Content Include="images\img\img %28224%29.jpeg" />
+    <Content Include="images\img\img %28225%29.jpeg" />
+    <Content Include="images\img\img %28226%29.jpeg" />
+    <Content Include="images\img\img %28227%29.jpeg" />
+    <Content Include="images\img\img %28228%29.jpeg" />
+    <Content Include="images\img\img %28229%29.jpeg" />
+    <Content Include="images\img\img %2823%29.jpeg" />
+    <Content Include="images\img\img %28230%29.jpeg" />
+    <Content Include="images\img\img %28231%29.jpeg" />
+    <Content Include="images\img\img %28232%29.jpeg" />
+    <Content Include="images\img\img %28233%29.jpeg" />
+    <Content Include="images\img\img %28234%29.jpeg" />
+    <Content Include="images\img\img %28235%29.jpeg" />
+    <Content Include="images\img\img %28236%29.jpeg" />
+    <Content Include="images\img\img %28237%29.jpeg" />
+    <Content Include="images\img\img %28238%29.jpeg" />
+    <Content Include="images\img\img %28239%29.jpeg" />
+    <Content Include="images\img\img %2824%29.jpeg" />
+    <Content Include="images\img\img %28240%29.jpeg" />
+    <Content Include="images\img\img %28241%29.jpeg" />
+    <Content Include="images\img\img %28242%29.jpeg" />
+    <Content Include="images\img\img %28243%29.jpeg" />
+    <Content Include="images\img\img %28244%29.jpeg" />
+    <Content Include="images\img\img %28245%29.jpeg" />
+    <Content Include="images\img\img %28246%29.jpeg" />
+    <Content Include="images\img\img %28247%29.jpeg" />
+    <Content Include="images\img\img %28248%29.jpeg" />
+    <Content Include="images\img\img %28249%29.jpeg" />
+    <Content Include="images\img\img %2825%29.jpeg" />
+    <Content Include="images\img\img %28250%29.jpeg" />
+    <Content Include="images\img\img %28251%29.jpeg" />
+    <Content Include="images\img\img %28252%29.jpeg" />
+    <Content Include="images\img\img %28253%29.jpeg" />
+    <Content Include="images\img\img %28254%29.jpeg" />
+    <Content Include="images\img\img %28255%29.jpeg" />
+    <Content Include="images\img\img %28256%29.jpeg" />
+    <Content Include="images\img\img %28257%29.jpeg" />
+    <Content Include="images\img\img %28258%29.jpeg" />
+    <Content Include="images\img\img %28259%29.jpeg" />
+    <Content Include="images\img\img %2826%29.jpeg" />
+    <Content Include="images\img\img %28260%29.jpeg" />
+    <Content Include="images\img\img %28261%29.jpeg" />
+    <Content Include="images\img\img %28262%29.jpeg" />
+    <Content Include="images\img\img %28263%29.jpeg" />
+    <Content Include="images\img\img %28264%29.jpeg" />
+    <Content Include="images\img\img %28265%29.jpeg" />
+    <Content Include="images\img\img %28266%29.jpeg" />
+    <Content Include="images\img\img %28267%29.jpeg" />
+    <Content Include="images\img\img %28268%29.jpeg" />
+    <Content Include="images\img\img %28269%29.jpeg" />
+    <Content Include="images\img\img %2827%29.jpeg" />
+    <Content Include="images\img\img %28270%29.jpeg" />
+    <Content Include="images\img\img %28271%29.jpeg" />
+    <Content Include="images\img\img %28272%29.jpeg" />
+    <Content Include="images\img\img %28273%29.jpeg" />
+    <Content Include="images\img\img %28274%29.jpeg" />
+    <Content Include="images\img\img %28275%29.jpeg" />
+    <Content Include="images\img\img %28276%29.jpeg" />
+    <Content Include="images\img\img %28277%29.jpeg" />
+    <Content Include="images\img\img %28278%29.jpeg" />
+    <Content Include="images\img\img %28279%29.jpeg" />
+    <Content Include="images\img\img %2828%29.jpeg" />
+    <Content Include="images\img\img %28280%29.jpeg" />
+    <Content Include="images\img\img %28281%29.jpeg" />
+    <Content Include="images\img\img %28282%29.jpeg" />
+    <Content Include="images\img\img %28283%29.jpeg" />
+    <Content Include="images\img\img %28284%29.jpeg" />
+    <Content Include="images\img\img %28285%29.jpeg" />
+    <Content Include="images\img\img %28286%29.jpeg" />
+    <Content Include="images\img\img %28287%29.jpeg" />
+    <Content Include="images\img\img %28288%29.jpeg" />
+    <Content Include="images\img\img %28289%29.jpeg" />
+    <Content Include="images\img\img %2829%29.jpeg" />
+    <Content Include="images\img\img %28290%29.jpeg" />
+    <Content Include="images\img\img %28291%29.jpeg" />
+    <Content Include="images\img\img %28292%29.jpeg" />
+    <Content Include="images\img\img %28293%29.jpeg" />
+    <Content Include="images\img\img %28294%29.jpeg" />
+    <Content Include="images\img\img %28295%29.jpeg" />
+    <Content Include="images\img\img %28296%29.jpeg" />
+    <Content Include="images\img\img %28297%29.jpeg" />
+    <Content Include="images\img\img %28298%29.jpeg" />
+    <Content Include="images\img\img %28299%29.jpeg" />
+    <Content Include="images\img\img %283%29.jpeg" />
+    <Content Include="images\img\img %2830%29.jpeg" />
+    <Content Include="images\img\img %28300%29.jpeg" />
+    <Content Include="images\img\img %28301%29.jpeg" />
+    <Content Include="images\img\img %28302%29.jpeg" />
+    <Content Include="images\img\img %28303%29.jpeg" />
+    <Content Include="images\img\img %28304%29.jpeg" />
+    <Content Include="images\img\img %28305%29.jpeg" />
+    <Content Include="images\img\img %28306%29.jpeg" />
+    <Content Include="images\img\img %28307%29.jpeg" />
+    <Content Include="images\img\img %28308%29.jpeg" />
+    <Content Include="images\img\img %28309%29.jpeg" />
+    <Content Include="images\img\img %2831%29.jpeg" />
+    <Content Include="images\img\img %28310%29.jpeg" />
+    <Content Include="images\img\img %28311%29.jpeg" />
+    <Content Include="images\img\img %28312%29.jpeg" />
+    <Content Include="images\img\img %28313%29.jpeg" />
+    <Content Include="images\img\img %28314%29.jpeg" />
+    <Content Include="images\img\img %28315%29.jpeg" />
+    <Content Include="images\img\img %28316%29.jpeg" />
+    <Content Include="images\img\img %28317%29.jpeg" />
+    <Content Include="images\img\img %28318%29.jpeg" />
+    <Content Include="images\img\img %28319%29.jpeg" />
+    <Content Include="images\img\img %2832%29.jpeg" />
+    <Content Include="images\img\img %28320%29.jpeg" />
+    <Content Include="images\img\img %28321%29.jpeg" />
+    <Content Include="images\img\img %28322%29.jpeg" />
+    <Content Include="images\img\img %28323%29.jpeg" />
+    <Content Include="images\img\img %28324%29.jpeg" />
+    <Content Include="images\img\img %28325%29.jpeg" />
+    <Content Include="images\img\img %28326%29.jpeg" />
+    <Content Include="images\img\img %28327%29.jpeg" />
+    <Content Include="images\img\img %28328%29.jpeg" />
+    <Content Include="images\img\img %28329%29.jpeg" />
+    <Content Include="images\img\img %2833%29.jpeg" />
+    <Content Include="images\img\img %28330%29.jpeg" />
+    <Content Include="images\img\img %28331%29.jpeg" />
+    <Content Include="images\img\img %28332%29.jpeg" />
+    <Content Include="images\img\img %28333%29.jpeg" />
+    <Content Include="images\img\img %28334%29.jpeg" />
+    <Content Include="images\img\img %28335%29.jpeg" />
+    <Content Include="images\img\img %28336%29.jpeg" />
+    <Content Include="images\img\img %28337%29.jpeg" />
+    <Content Include="images\img\img %28338%29.jpeg" />
+    <Content Include="images\img\img %28339%29.jpeg" />
+    <Content Include="images\img\img %2834%29.jpeg" />
+    <Content Include="images\img\img %28340%29.jpeg" />
+    <Content Include="images\img\img %28341%29.jpeg" />
+    <Content Include="images\img\img %28342%29.jpeg" />
+    <Content Include="images\img\img %28343%29.jpeg" />
+    <Content Include="images\img\img %28344%29.jpeg" />
+    <Content Include="images\img\img %28345%29.jpeg" />
+    <Content Include="images\img\img %28346%29.jpeg" />
+    <Content Include="images\img\img %28347%29.jpeg" />
+    <Content Include="images\img\img %28348%29.jpeg" />
+    <Content Include="images\img\img %28349%29.jpeg" />
+    <Content Include="images\img\img %2835%29.jpeg" />
+    <Content Include="images\img\img %28350%29.jpeg" />
+    <Content Include="images\img\img %28351%29.jpeg" />
+    <Content Include="images\img\img %28352%29.jpeg" />
+    <Content Include="images\img\img %28353%29.jpeg" />
+    <Content Include="images\img\img %28354%29.jpeg" />
+    <Content Include="images\img\img %28355%29.jpeg" />
+    <Content Include="images\img\img %28356%29.jpeg" />
+    <Content Include="images\img\img %28357%29.jpeg" />
+    <Content Include="images\img\img %28358%29.jpeg" />
+    <Content Include="images\img\img %28359%29.jpeg" />
+    <Content Include="images\img\img %2836%29.jpeg" />
+    <Content Include="images\img\img %28360%29.jpeg" />
+    <Content Include="images\img\img %28361%29.jpeg" />
+    <Content Include="images\img\img %28362%29.jpeg" />
+    <Content Include="images\img\img %28363%29.jpeg" />
+    <Content Include="images\img\img %28364%29.jpeg" />
+    <Content Include="images\img\img %28365%29.jpeg" />
+    <Content Include="images\img\img %28366%29.jpeg" />
+    <Content Include="images\img\img %28367%29.jpeg" />
+    <Content Include="images\img\img %28368%29.jpeg" />
+    <Content Include="images\img\img %28369%29.jpeg" />
+    <Content Include="images\img\img %2837%29.jpeg" />
+    <Content Include="images\img\img %28370%29.jpeg" />
+    <Content Include="images\img\img %28371%29.jpeg" />
+    <Content Include="images\img\img %28372%29.jpeg" />
+    <Content Include="images\img\img %28373%29.jpeg" />
+    <Content Include="images\img\img %28374%29.jpeg" />
+    <Content Include="images\img\img %28375%29.jpeg" />
+    <Content Include="images\img\img %28376%29.jpeg" />
+    <Content Include="images\img\img %28377%29.jpeg" />
+    <Content Include="images\img\img %28378%29.jpeg" />
+    <Content Include="images\img\img %28379%29.jpeg" />
+    <Content Include="images\img\img %2838%29.jpeg" />
+    <Content Include="images\img\img %28380%29.jpeg" />
+    <Content Include="images\img\img %28381%29.jpeg" />
+    <Content Include="images\img\img %28382%29.jpeg" />
+    <Content Include="images\img\img %28383%29.jpeg" />
+    <Content Include="images\img\img %28384%29.jpeg" />
+    <Content Include="images\img\img %28385%29.jpeg" />
+    <Content Include="images\img\img %28386%29.jpeg" />
+    <Content Include="images\img\img %28387%29.jpeg" />
+    <Content Include="images\img\img %28388%29.jpeg" />
+    <Content Include="images\img\img %28389%29.jpeg" />
+    <Content Include="images\img\img %2839%29.jpeg" />
+    <Content Include="images\img\img %28390%29.jpeg" />
+    <Content Include="images\img\img %28391%29.jpeg" />
+    <Content Include="images\img\img %28392%29.jpeg" />
+    <Content Include="images\img\img %28393%29.jpeg" />
+    <Content Include="images\img\img %28394%29.jpeg" />
+    <Content Include="images\img\img %28395%29.jpeg" />
+    <Content Include="images\img\img %28396%29.jpeg" />
+    <Content Include="images\img\img %28397%29.jpeg" />
+    <Content Include="images\img\img %28398%29.jpeg" />
+    <Content Include="images\img\img %28399%29.jpeg" />
+    <Content Include="images\img\img %284%29.jpeg" />
+    <Content Include="images\img\img %2840%29.jpeg" />
+    <Content Include="images\img\img %28400%29.jpeg" />
+    <Content Include="images\img\img %28401%29.jpeg" />
+    <Content Include="images\img\img %28402%29.jpeg" />
+    <Content Include="images\img\img %28403%29.jpeg" />
+    <Content Include="images\img\img %28404%29.jpeg" />
+    <Content Include="images\img\img %28405%29.jpeg" />
+    <Content Include="images\img\img %28406%29.jpeg" />
+    <Content Include="images\img\img %28407%29.jpeg" />
+    <Content Include="images\img\img %28408%29.jpeg" />
+    <Content Include="images\img\img %28409%29.jpeg" />
+    <Content Include="images\img\img %2841%29.jpeg" />
+    <Content Include="images\img\img %28410%29.jpeg" />
+    <Content Include="images\img\img %28411%29.jpeg" />
+    <Content Include="images\img\img %28412%29.jpeg" />
+    <Content Include="images\img\img %28413%29.jpeg" />
+    <Content Include="images\img\img %28414%29.jpeg" />
+    <Content Include="images\img\img %28415%29.jpeg" />
+    <Content Include="images\img\img %28416%29.jpeg" />
+    <Content Include="images\img\img %28417%29.jpeg" />
+    <Content Include="images\img\img %28418%29.jpeg" />
+    <Content Include="images\img\img %28419%29.jpeg" />
+    <Content Include="images\img\img %2842%29.jpeg" />
+    <Content Include="images\img\img %28420%29.jpeg" />
+    <Content Include="images\img\img %28421%29.jpeg" />
+    <Content Include="images\img\img %28422%29.jpeg" />
+    <Content Include="images\img\img %28423%29.jpeg" />
+    <Content Include="images\img\img %28424%29.jpeg" />
+    <Content Include="images\img\img %28425%29.jpeg" />
+    <Content Include="images\img\img %28426%29.jpeg" />
+    <Content Include="images\img\img %28427%29.jpeg" />
+    <Content Include="images\img\img %28428%29.jpeg" />
+    <Content Include="images\img\img %28429%29.jpeg" />
+    <Content Include="images\img\img %2843%29.jpeg" />
+    <Content Include="images\img\img %28430%29.jpeg" />
+    <Content Include="images\img\img %28431%29.jpeg" />
+    <Content Include="images\img\img %28432%29.jpeg" />
+    <Content Include="images\img\img %28433%29.jpeg" />
+    <Content Include="images\img\img %28434%29.jpeg" />
+    <Content Include="images\img\img %28435%29.jpeg" />
+    <Content Include="images\img\img %28436%29.jpeg" />
+    <Content Include="images\img\img %28437%29.jpeg" />
+    <Content Include="images\img\img %28438%29.jpeg" />
+    <Content Include="images\img\img %28439%29.jpeg" />
+    <Content Include="images\img\img %2844%29.jpeg" />
+    <Content Include="images\img\img %28440%29.jpeg" />
+    <Content Include="images\img\img %28441%29.jpeg" />
+    <Content Include="images\img\img %28442%29.jpeg" />
+    <Content Include="images\img\img %28443%29.jpeg" />
+    <Content Include="images\img\img %28444%29.jpeg" />
+    <Content Include="images\img\img %28445%29.jpeg" />
+    <Content Include="images\img\img %28446%29.jpeg" />
+    <Content Include="images\img\img %28447%29.jpeg" />
+    <Content Include="images\img\img %28448%29.jpeg" />
+    <Content Include="images\img\img %28449%29.jpeg" />
+    <Content Include="images\img\img %2845%29.jpeg" />
+    <Content Include="images\img\img %28450%29.jpeg" />
+    <Content Include="images\img\img %28451%29.jpeg" />
+    <Content Include="images\img\img %28452%29.jpeg" />
+    <Content Include="images\img\img %28453%29.jpeg" />
+    <Content Include="images\img\img %28454%29.jpeg" />
+    <Content Include="images\img\img %28455%29.jpeg" />
+    <Content Include="images\img\img %28456%29.jpeg" />
+    <Content Include="images\img\img %28457%29.jpeg" />
+    <Content Include="images\img\img %28458%29.jpeg" />
+    <Content Include="images\img\img %28459%29.jpeg" />
+    <Content Include="images\img\img %2846%29.jpeg" />
+    <Content Include="images\img\img %28460%29.jpeg" />
+    <Content Include="images\img\img %28461%29.jpeg" />
+    <Content Include="images\img\img %28462%29.jpeg" />
+    <Content Include="images\img\img %28463%29.jpeg" />
+    <Content Include="images\img\img %28464%29.jpeg" />
+    <Content Include="images\img\img %28465%29.jpeg" />
+    <Content Include="images\img\img %28466%29.jpeg" />
+    <Content Include="images\img\img %28467%29.jpeg" />
+    <Content Include="images\img\img %28468%29.jpeg" />
+    <Content Include="images\img\img %28469%29.jpeg" />
+    <Content Include="images\img\img %2847%29.jpeg" />
+    <Content Include="images\img\img %28470%29.jpeg" />
+    <Content Include="images\img\img %28471%29.jpeg" />
+    <Content Include="images\img\img %28472%29.jpeg" />
+    <Content Include="images\img\img %28473%29.jpeg" />
+    <Content Include="images\img\img %28474%29.jpeg" />
+    <Content Include="images\img\img %28475%29.jpeg" />
+    <Content Include="images\img\img %28476%29.jpeg" />
+    <Content Include="images\img\img %28477%29.jpeg" />
+    <Content Include="images\img\img %28478%29.jpeg" />
+    <Content Include="images\img\img %28479%29.jpeg" />
+    <Content Include="images\img\img %2848%29.jpeg" />
+    <Content Include="images\img\img %28480%29.jpeg" />
+    <Content Include="images\img\img %28481%29.jpeg" />
+    <Content Include="images\img\img %28482%29.jpeg" />
+    <Content Include="images\img\img %28483%29.jpeg" />
+    <Content Include="images\img\img %28484%29.jpeg" />
+    <Content Include="images\img\img %28485%29.jpeg" />
+    <Content Include="images\img\img %28486%29.jpeg" />
+    <Content Include="images\img\img %28487%29.jpeg" />
+    <Content Include="images\img\img %28488%29.jpeg" />
+    <Content Include="images\img\img %28489%29.jpeg" />
+    <Content Include="images\img\img %2849%29.jpeg" />
+    <Content Include="images\img\img %28490%29.jpeg" />
+    <Content Include="images\img\img %28491%29.jpeg" />
+    <Content Include="images\img\img %28492%29.jpeg" />
+    <Content Include="images\img\img %28493%29.jpeg" />
+    <Content Include="images\img\img %28494%29.jpeg" />
+    <Content Include="images\img\img %28495%29.jpeg" />
+    <Content Include="images\img\img %28496%29.jpeg" />
+    <Content Include="images\img\img %28497%29.jpeg" />
+    <Content Include="images\img\img %28498%29.jpeg" />
+    <Content Include="images\img\img %28499%29.jpeg" />
+    <Content Include="images\img\img %285%29.jpeg" />
+    <Content Include="images\img\img %2850%29.jpeg" />
+    <Content Include="images\img\img %28500%29.jpeg" />
+    <Content Include="images\img\img %28501%29.jpeg" />
+    <Content Include="images\img\img %28502%29.jpeg" />
+    <Content Include="images\img\img %28503%29.jpeg" />
+    <Content Include="images\img\img %28504%29.jpeg" />
+    <Content Include="images\img\img %28505%29.jpeg" />
+    <Content Include="images\img\img %28506%29.jpeg" />
+    <Content Include="images\img\img %28507%29.jpeg" />
+    <Content Include="images\img\img %28508%29.jpeg" />
+    <Content Include="images\img\img %28509%29.jpeg" />
+    <Content Include="images\img\img %2851%29.jpeg" />
+    <Content Include="images\img\img %28510%29.jpeg" />
+    <Content Include="images\img\img %28511%29.jpeg" />
+    <Content Include="images\img\img %28512%29.jpeg" />
+    <Content Include="images\img\img %28513%29.jpeg" />
+    <Content Include="images\img\img %28514%29.jpeg" />
+    <Content Include="images\img\img %28515%29.jpeg" />
+    <Content Include="images\img\img %28516%29.jpeg" />
+    <Content Include="images\img\img %28517%29.jpeg" />
+    <Content Include="images\img\img %28518%29.jpeg" />
+    <Content Include="images\img\img %28519%29.jpeg" />
+    <Content Include="images\img\img %2852%29.jpeg" />
+    <Content Include="images\img\img %28520%29.jpeg" />
+    <Content Include="images\img\img %28521%29.jpeg" />
+    <Content Include="images\img\img %28522%29.jpeg" />
+    <Content Include="images\img\img %28523%29.jpeg" />
+    <Content Include="images\img\img %28524%29.jpeg" />
+    <Content Include="images\img\img %28525%29.jpeg" />
+    <Content Include="images\img\img %28526%29.jpeg" />
+    <Content Include="images\img\img %28527%29.jpeg" />
+    <Content Include="images\img\img %28528%29.jpeg" />
+    <Content Include="images\img\img %28529%29.jpeg" />
+    <Content Include="images\img\img %2853%29.jpeg" />
+    <Content Include="images\img\img %28530%29.jpeg" />
+    <Content Include="images\img\img %28531%29.jpeg" />
+    <Content Include="images\img\img %28532%29.jpeg" />
+    <Content Include="images\img\img %28533%29.jpeg" />
+    <Content Include="images\img\img %28534%29.jpeg" />
+    <Content Include="images\img\img %28535%29.jpeg" />
+    <Content Include="images\img\img %28536%29.jpeg" />
+    <Content Include="images\img\img %28537%29.jpeg" />
+    <Content Include="images\img\img %28538%29.jpeg" />
+    <Content Include="images\img\img %28539%29.jpeg" />
+    <Content Include="images\img\img %2854%29.jpeg" />
+    <Content Include="images\img\img %28540%29.jpeg" />
+    <Content Include="images\img\img %28541%29.jpeg" />
+    <Content Include="images\img\img %28542%29.jpeg" />
+    <Content Include="images\img\img %28543%29.jpeg" />
+    <Content Include="images\img\img %28544%29.jpeg" />
+    <Content Include="images\img\img %28545%29.jpeg" />
+    <Content Include="images\img\img %28546%29.jpeg" />
+    <Content Include="images\img\img %28547%29.jpeg" />
+    <Content Include="images\img\img %28548%29.jpeg" />
+    <Content Include="images\img\img %28549%29.jpeg" />
+    <Content Include="images\img\img %2855%29.jpeg" />
+    <Content Include="images\img\img %28550%29.jpeg" />
+    <Content Include="images\img\img %28551%29.jpeg" />
+    <Content Include="images\img\img %28552%29.jpeg" />
+    <Content Include="images\img\img %28553%29.jpeg" />
+    <Content Include="images\img\img %28554%29.jpeg" />
+    <Content Include="images\img\img %28555%29.jpeg" />
+    <Content Include="images\img\img %28556%29.jpeg" />
+    <Content Include="images\img\img %28557%29.jpeg" />
+    <Content Include="images\img\img %28558%29.jpeg" />
+    <Content Include="images\img\img %28559%29.jpeg" />
+    <Content Include="images\img\img %2856%29.jpeg" />
+    <Content Include="images\img\img %28560%29.jpeg" />
+    <Content Include="images\img\img %28561%29.jpeg" />
+    <Content Include="images\img\img %28562%29.jpeg" />
+    <Content Include="images\img\img %28563%29.jpeg" />
+    <Content Include="images\img\img %28564%29.jpeg" />
+    <Content Include="images\img\img %28565%29.jpeg" />
+    <Content Include="images\img\img %28566%29.jpeg" />
+    <Content Include="images\img\img %28567%29.jpeg" />
+    <Content Include="images\img\img %28568%29.jpeg" />
+    <Content Include="images\img\img %28569%29.jpeg" />
+    <Content Include="images\img\img %2857%29.jpeg" />
+    <Content Include="images\img\img %28570%29.jpeg" />
+    <Content Include="images\img\img %28571%29.jpeg" />
+    <Content Include="images\img\img %28572%29.jpeg" />
+    <Content Include="images\img\img %28573%29.jpeg" />
+    <Content Include="images\img\img %28574%29.jpeg" />
+    <Content Include="images\img\img %28575%29.jpeg" />
+    <Content Include="images\img\img %28576%29.jpeg" />
+    <Content Include="images\img\img %28577%29.jpeg" />
+    <Content Include="images\img\img %28578%29.jpeg" />
+    <Content Include="images\img\img %28579%29.jpeg" />
+    <Content Include="images\img\img %2858%29.jpeg" />
+    <Content Include="images\img\img %28580%29.jpeg" />
+    <Content Include="images\img\img %28581%29.jpeg" />
+    <Content Include="images\img\img %28582%29.jpeg" />
+    <Content Include="images\img\img %28583%29.jpeg" />
+    <Content Include="images\img\img %28584%29.jpeg" />
+    <Content Include="images\img\img %28585%29.jpeg" />
+    <Content Include="images\img\img %28586%29.jpeg" />
+    <Content Include="images\img\img %28587%29.jpeg" />
+    <Content Include="images\img\img %28588%29.jpeg" />
+    <Content Include="images\img\img %28589%29.jpeg" />
+    <Content Include="images\img\img %2859%29.jpeg" />
+    <Content Include="images\img\img %28590%29.jpeg" />
+    <Content Include="images\img\img %28591%29.jpeg" />
+    <Content Include="images\img\img %28592%29.jpeg" />
+    <Content Include="images\img\img %28593%29.jpeg" />
+    <Content Include="images\img\img %28594%29.jpeg" />
+    <Content Include="images\img\img %28595%29.jpeg" />
+    <Content Include="images\img\img %28596%29.jpeg" />
+    <Content Include="images\img\img %28597%29.jpeg" />
+    <Content Include="images\img\img %28598%29.jpeg" />
+    <Content Include="images\img\img %28599%29.jpeg" />
+    <Content Include="images\img\img %286%29.jpeg" />
+    <Content Include="images\img\img %2860%29.jpeg" />
+    <Content Include="images\img\img %28600%29.jpeg" />
+    <Content Include="images\img\img %28601%29.jpeg" />
+    <Content Include="images\img\img %28602%29.jpeg" />
+    <Content Include="images\img\img %28603%29.jpeg" />
+    <Content Include="images\img\img %28604%29.jpeg" />
+    <Content Include="images\img\img %28605%29.jpeg" />
+    <Content Include="images\img\img %28606%29.jpeg" />
+    <Content Include="images\img\img %28607%29.jpeg" />
+    <Content Include="images\img\img %28608%29.jpeg" />
+    <Content Include="images\img\img %28609%29.jpeg" />
+    <Content Include="images\img\img %2861%29.jpeg" />
+    <Content Include="images\img\img %28610%29.jpeg" />
+    <Content Include="images\img\img %28611%29.jpeg" />
+    <Content Include="images\img\img %28612%29.jpeg" />
+    <Content Include="images\img\img %28613%29.jpeg" />
+    <Content Include="images\img\img %28614%29.jpeg" />
+    <Content Include="images\img\img %28615%29.jpeg" />
+    <Content Include="images\img\img %28616%29.jpeg" />
+    <Content Include="images\img\img %28617%29.jpeg" />
+    <Content Include="images\img\img %28618%29.jpeg" />
+    <Content Include="images\img\img %28619%29.jpeg" />
+    <Content Include="images\img\img %2862%29.jpeg" />
+    <Content Include="images\img\img %28620%29.jpeg" />
+    <Content Include="images\img\img %28621%29.jpeg" />
+    <Content Include="images\img\img %28622%29.jpeg" />
+    <Content Include="images\img\img %28623%29.jpeg" />
+    <Content Include="images\img\img %28624%29.jpeg" />
+    <Content Include="images\img\img %28625%29.jpeg" />
+    <Content Include="images\img\img %28626%29.jpeg" />
+    <Content Include="images\img\img %28627%29.jpeg" />
+    <Content Include="images\img\img %28628%29.jpeg" />
+    <Content Include="images\img\img %28629%29.jpeg" />
+    <Content Include="images\img\img %2863%29.jpeg" />
+    <Content Include="images\img\img %28630%29.jpeg" />
+    <Content Include="images\img\img %28631%29.jpeg" />
+    <Content Include="images\img\img %28632%29.jpeg" />
+    <Content Include="images\img\img %28633%29.jpeg" />
+    <Content Include="images\img\img %28634%29.jpeg" />
+    <Content Include="images\img\img %28635%29.jpeg" />
+    <Content Include="images\img\img %28636%29.jpeg" />
+    <Content Include="images\img\img %28637%29.jpeg" />
+    <Content Include="images\img\img %28638%29.jpeg" />
+    <Content Include="images\img\img %28639%29.jpeg" />
+    <Content Include="images\img\img %2864%29.jpeg" />
+    <Content Include="images\img\img %28640%29.jpeg" />
+    <Content Include="images\img\img %28641%29.jpeg" />
+    <Content Include="images\img\img %28642%29.jpeg" />
+    <Content Include="images\img\img %28643%29.jpeg" />
+    <Content Include="images\img\img %28644%29.jpeg" />
+    <Content Include="images\img\img %28645%29.jpeg" />
+    <Content Include="images\img\img %28646%29.jpeg" />
+    <Content Include="images\img\img %28647%29.jpeg" />
+    <Content Include="images\img\img %28648%29.jpeg" />
+    <Content Include="images\img\img %28649%29.jpeg" />
+    <Content Include="images\img\img %2865%29.jpeg" />
+    <Content Include="images\img\img %28650%29.jpeg" />
+    <Content Include="images\img\img %28651%29.jpeg" />
+    <Content Include="images\img\img %28652%29.jpeg" />
+    <Content Include="images\img\img %28653%29.jpeg" />
+    <Content Include="images\img\img %28654%29.jpeg" />
+    <Content Include="images\img\img %28655%29.jpeg" />
+    <Content Include="images\img\img %28656%29.jpeg" />
+    <Content Include="images\img\img %28657%29.jpeg" />
+    <Content Include="images\img\img %28658%29.jpeg" />
+    <Content Include="images\img\img %28659%29.jpeg" />
+    <Content Include="images\img\img %2866%29.jpeg" />
+    <Content Include="images\img\img %28660%29.jpeg" />
+    <Content Include="images\img\img %28661%29.jpeg" />
+    <Content Include="images\img\img %28662%29.jpeg" />
+    <Content Include="images\img\img %28663%29.jpeg" />
+    <Content Include="images\img\img %28664%29.jpeg" />
+    <Content Include="images\img\img %28665%29.jpeg" />
+    <Content Include="images\img\img %28666%29.jpeg" />
+    <Content Include="images\img\img %28667%29.jpeg" />
+    <Content Include="images\img\img %28668%29.jpeg" />
+    <Content Include="images\img\img %28669%29.jpeg" />
+    <Content Include="images\img\img %2867%29.jpeg" />
+    <Content Include="images\img\img %28670%29.jpeg" />
+    <Content Include="images\img\img %28671%29.jpeg" />
+    <Content Include="images\img\img %28672%29.jpeg" />
+    <Content Include="images\img\img %28673%29.jpeg" />
+    <Content Include="images\img\img %28674%29.jpeg" />
+    <Content Include="images\img\img %28675%29.jpeg" />
+    <Content Include="images\img\img %28676%29.jpeg" />
+    <Content Include="images\img\img %28677%29.jpeg" />
+    <Content Include="images\img\img %28678%29.jpeg" />
+    <Content Include="images\img\img %28679%29.jpeg" />
+    <Content Include="images\img\img %2868%29.jpeg" />
+    <Content Include="images\img\img %28680%29.jpeg" />
+    <Content Include="images\img\img %28681%29.jpeg" />
+    <Content Include="images\img\img %28682%29.jpeg" />
+    <Content Include="images\img\img %28683%29.jpeg" />
+    <Content Include="images\img\img %28684%29.jpeg" />
+    <Content Include="images\img\img %28685%29.jpeg" />
+    <Content Include="images\img\img %28686%29.jpeg" />
+    <Content Include="images\img\img %28687%29.jpeg" />
+    <Content Include="images\img\img %28688%29.jpeg" />
+    <Content Include="images\img\img %28689%29.jpeg" />
+    <Content Include="images\img\img %2869%29.jpeg" />
+    <Content Include="images\img\img %28690%29.jpeg" />
+    <Content Include="images\img\img %28691%29.jpeg" />
+    <Content Include="images\img\img %28692%29.jpeg" />
+    <Content Include="images\img\img %28693%29.jpeg" />
+    <Content Include="images\img\img %28694%29.jpeg" />
+    <Content Include="images\img\img %28695%29.jpeg" />
+    <Content Include="images\img\img %28696%29.jpeg" />
+    <Content Include="images\img\img %28697%29.jpeg" />
+    <Content Include="images\img\img %28698%29.jpeg" />
+    <Content Include="images\img\img %28699%29.jpeg" />
+    <Content Include="images\img\img %287%29.jpeg" />
+    <Content Include="images\img\img %2870%29.jpeg" />
+    <Content Include="images\img\img %28700%29.jpeg" />
+    <Content Include="images\img\img %28701%29.jpeg" />
+    <Content Include="images\img\img %28702%29.jpeg" />
+    <Content Include="images\img\img %28703%29.jpeg" />
+    <Content Include="images\img\img %28704%29.jpeg" />
+    <Content Include="images\img\img %28705%29.jpeg" />
+    <Content Include="images\img\img %28706%29.jpeg" />
+    <Content Include="images\img\img %28707%29.jpeg" />
+    <Content Include="images\img\img %28708%29.jpeg" />
+    <Content Include="images\img\img %28709%29.jpeg" />
+    <Content Include="images\img\img %2871%29.jpeg" />
+    <Content Include="images\img\img %28710%29.jpeg" />
+    <Content Include="images\img\img %28711%29.jpeg" />
+    <Content Include="images\img\img %28712%29.jpeg" />
+    <Content Include="images\img\img %28713%29.jpeg" />
+    <Content Include="images\img\img %28714%29.jpeg" />
+    <Content Include="images\img\img %28715%29.jpeg" />
+    <Content Include="images\img\img %28716%29.jpeg" />
+    <Content Include="images\img\img %28717%29.jpeg" />
+    <Content Include="images\img\img %28718%29.jpeg" />
+    <Content Include="images\img\img %28719%29.jpeg" />
+    <Content Include="images\img\img %2872%29.jpeg" />
+    <Content Include="images\img\img %28720%29.jpeg" />
+    <Content Include="images\img\img %28721%29.jpeg" />
+    <Content Include="images\img\img %28722%29.jpeg" />
+    <Content Include="images\img\img %28723%29.jpeg" />
+    <Content Include="images\img\img %28724%29.jpeg" />
+    <Content Include="images\img\img %28725%29.jpeg" />
+    <Content Include="images\img\img %28726%29.jpeg" />
+    <Content Include="images\img\img %28727%29.jpeg" />
+    <Content Include="images\img\img %28728%29.jpeg" />
+    <Content Include="images\img\img %28729%29.jpeg" />
+    <Content Include="images\img\img %2873%29.jpeg" />
+    <Content Include="images\img\img %28730%29.jpeg" />
+    <Content Include="images\img\img %28731%29.jpeg" />
+    <Content Include="images\img\img %28732%29.jpeg" />
+    <Content Include="images\img\img %28733%29.jpeg" />
+    <Content Include="images\img\img %28734%29.jpeg" />
+    <Content Include="images\img\img %28735%29.jpeg" />
+    <Content Include="images\img\img %28736%29.jpeg" />
+    <Content Include="images\img\img %28737%29.jpeg" />
+    <Content Include="images\img\img %28738%29.jpeg" />
+    <Content Include="images\img\img %28739%29.jpeg" />
+    <Content Include="images\img\img %2874%29.jpeg" />
+    <Content Include="images\img\img %28740%29.jpeg" />
+    <Content Include="images\img\img %28741%29.jpeg" />
+    <Content Include="images\img\img %28742%29.jpeg" />
+    <Content Include="images\img\img %28743%29.jpeg" />
+    <Content Include="images\img\img %28744%29.jpeg" />
+    <Content Include="images\img\img %28745%29.jpeg" />
+    <Content Include="images\img\img %28746%29.jpeg" />
+    <Content Include="images\img\img %28747%29.jpeg" />
+    <Content Include="images\img\img %28748%29.jpeg" />
+    <Content Include="images\img\img %28749%29.jpeg" />
+    <Content Include="images\img\img %2875%29.jpeg" />
+    <Content Include="images\img\img %28750%29.jpeg" />
+    <Content Include="images\img\img %28751%29.jpeg" />
+    <Content Include="images\img\img %28752%29.jpeg" />
+    <Content Include="images\img\img %28753%29.jpeg" />
+    <Content Include="images\img\img %28754%29.jpeg" />
+    <Content Include="images\img\img %28755%29.jpeg" />
+    <Content Include="images\img\img %28756%29.jpeg" />
+    <Content Include="images\img\img %28757%29.jpeg" />
+    <Content Include="images\img\img %28758%29.jpeg" />
+    <Content Include="images\img\img %28759%29.jpeg" />
+    <Content Include="images\img\img %2876%29.jpeg" />
+    <Content Include="images\img\img %28760%29.jpeg" />
+    <Content Include="images\img\img %28761%29.jpeg" />
+    <Content Include="images\img\img %28762%29.jpeg" />
+    <Content Include="images\img\img %28763%29.jpeg" />
+    <Content Include="images\img\img %28764%29.jpeg" />
+    <Content Include="images\img\img %28765%29.jpeg" />
+    <Content Include="images\img\img %28766%29.jpeg" />
+    <Content Include="images\img\img %28767%29.jpeg" />
+    <Content Include="images\img\img %28768%29.jpeg" />
+    <Content Include="images\img\img %28769%29.jpeg" />
+    <Content Include="images\img\img %2877%29.jpeg" />
+    <Content Include="images\img\img %28770%29.jpeg" />
+    <Content Include="images\img\img %28771%29.jpeg" />
+    <Content Include="images\img\img %28772%29.jpeg" />
+    <Content Include="images\img\img %28773%29.jpeg" />
+    <Content Include="images\img\img %28774%29.jpeg" />
+    <Content Include="images\img\img %28775%29.jpeg" />
+    <Content Include="images\img\img %28776%29.jpeg" />
+    <Content Include="images\img\img %28777%29.jpeg" />
+    <Content Include="images\img\img %28778%29.jpeg" />
+    <Content Include="images\img\img %28779%29.jpeg" />
+    <Content Include="images\img\img %2878%29.jpeg" />
+    <Content Include="images\img\img %28780%29.jpeg" />
+    <Content Include="images\img\img %28781%29.jpeg" />
+    <Content Include="images\img\img %28782%29.jpeg" />
+    <Content Include="images\img\img %28783%29.jpeg" />
+    <Content Include="images\img\img %28784%29.jpeg" />
+    <Content Include="images\img\img %28785%29.jpeg" />
+    <Content Include="images\img\img %28786%29.jpeg" />
+    <Content Include="images\img\img %28787%29.jpeg" />
+    <Content Include="images\img\img %28788%29.jpeg" />
+    <Content Include="images\img\img %28789%29.jpeg" />
+    <Content Include="images\img\img %2879%29.jpeg" />
+    <Content Include="images\img\img %28790%29.jpeg" />
+    <Content Include="images\img\img %28791%29.jpeg" />
+    <Content Include="images\img\img %28792%29.jpeg" />
+    <Content Include="images\img\img %28793%29.jpeg" />
+    <Content Include="images\img\img %28794%29.jpeg" />
+    <Content Include="images\img\img %28795%29.jpeg" />
+    <Content Include="images\img\img %28796%29.jpeg" />
+    <Content Include="images\img\img %28797%29.jpeg" />
+    <Content Include="images\img\img %28798%29.jpeg" />
+    <Content Include="images\img\img %28799%29.jpeg" />
+    <Content Include="images\img\img %288%29.jpeg" />
+    <Content Include="images\img\img %2880%29.jpeg" />
+    <Content Include="images\img\img %28800%29.jpeg" />
+    <Content Include="images\img\img %28801%29.jpeg" />
+    <Content Include="images\img\img %28802%29.jpeg" />
+    <Content Include="images\img\img %28803%29.jpeg" />
+    <Content Include="images\img\img %28804%29.jpeg" />
+    <Content Include="images\img\img %28805%29.jpeg" />
+    <Content Include="images\img\img %28806%29.jpeg" />
+    <Content Include="images\img\img %28807%29.jpeg" />
+    <Content Include="images\img\img %28808%29.jpeg" />
+    <Content Include="images\img\img %28809%29.jpeg" />
+    <Content Include="images\img\img %2881%29.jpeg" />
+    <Content Include="images\img\img %28810%29.jpeg" />
+    <Content Include="images\img\img %28811%29.jpeg" />
+    <Content Include="images\img\img %28812%29.jpeg" />
+    <Content Include="images\img\img %28813%29.jpeg" />
+    <Content Include="images\img\img %28814%29.jpeg" />
+    <Content Include="images\img\img %28815%29.jpeg" />
+    <Content Include="images\img\img %28816%29.jpeg" />
+    <Content Include="images\img\img %28817%29.jpeg" />
+    <Content Include="images\img\img %28818%29.jpeg" />
+    <Content Include="images\img\img %28819%29.jpeg" />
+    <Content Include="images\img\img %2882%29.jpeg" />
+    <Content Include="images\img\img %28820%29.jpeg" />
+    <Content Include="images\img\img %28821%29.jpeg" />
+    <Content Include="images\img\img %28822%29.jpeg" />
+    <Content Include="images\img\img %28823%29.jpeg" />
+    <Content Include="images\img\img %28824%29.jpeg" />
+    <Content Include="images\img\img %28825%29.jpeg" />
+    <Content Include="images\img\img %28826%29.jpeg" />
+    <Content Include="images\img\img %28827%29.jpeg" />
+    <Content Include="images\img\img %28828%29.jpeg" />
+    <Content Include="images\img\img %28829%29.jpeg" />
+    <Content Include="images\img\img %2883%29.jpeg" />
+    <Content Include="images\img\img %28830%29.jpeg" />
+    <Content Include="images\img\img %28831%29.jpeg" />
+    <Content Include="images\img\img %28832%29.jpeg" />
+    <Content Include="images\img\img %28833%29.jpeg" />
+    <Content Include="images\img\img %28834%29.jpeg" />
+    <Content Include="images\img\img %28835%29.jpeg" />
+    <Content Include="images\img\img %28836%29.jpeg" />
+    <Content Include="images\img\img %28837%29.jpeg" />
+    <Content Include="images\img\img %28838%29.jpeg" />
+    <Content Include="images\img\img %28839%29.jpeg" />
+    <Content Include="images\img\img %2884%29.jpeg" />
+    <Content Include="images\img\img %28840%29.jpeg" />
+    <Content Include="images\img\img %28841%29.jpeg" />
+    <Content Include="images\img\img %28842%29.jpeg" />
+    <Content Include="images\img\img %28843%29.jpeg" />
+    <Content Include="images\img\img %28844%29.jpeg" />
+    <Content Include="images\img\img %28845%29.jpeg" />
+    <Content Include="images\img\img %28846%29.jpeg" />
+    <Content Include="images\img\img %28847%29.jpeg" />
+    <Content Include="images\img\img %28848%29.jpeg" />
+    <Content Include="images\img\img %28849%29.jpeg" />
+    <Content Include="images\img\img %2885%29.jpeg" />
+    <Content Include="images\img\img %28850%29.jpeg" />
+    <Content Include="images\img\img %28851%29.jpeg" />
+    <Content Include="images\img\img %28852%29.jpeg" />
+    <Content Include="images\img\img %28853%29.jpeg" />
+    <Content Include="images\img\img %28854%29.jpeg" />
+    <Content Include="images\img\img %28855%29.jpeg" />
+    <Content Include="images\img\img %28856%29.jpeg" />
+    <Content Include="images\img\img %28857%29.jpeg" />
+    <Content Include="images\img\img %28858%29.jpeg" />
+    <Content Include="images\img\img %28859%29.jpeg" />
+    <Content Include="images\img\img %2886%29.jpeg" />
+    <Content Include="images\img\img %28860%29.jpeg" />
+    <Content Include="images\img\img %28861%29.jpeg" />
+    <Content Include="images\img\img %28862%29.jpeg" />
+    <Content Include="images\img\img %28863%29.jpeg" />
+    <Content Include="images\img\img %28864%29.jpeg" />
+    <Content Include="images\img\img %28865%29.jpeg" />
+    <Content Include="images\img\img %28866%29.jpeg" />
+    <Content Include="images\img\img %28867%29.jpeg" />
+    <Content Include="images\img\img %28868%29.jpeg" />
+    <Content Include="images\img\img %28869%29.jpeg" />
+    <Content Include="images\img\img %2887%29.jpeg" />
+    <Content Include="images\img\img %28870%29.jpeg" />
+    <Content Include="images\img\img %28871%29.jpeg" />
+    <Content Include="images\img\img %28872%29.jpeg" />
+    <Content Include="images\img\img %28873%29.jpeg" />
+    <Content Include="images\img\img %28874%29.jpeg" />
+    <Content Include="images\img\img %28875%29.jpeg" />
+    <Content Include="images\img\img %28876%29.jpeg" />
+    <Content Include="images\img\img %28877%29.jpeg" />
+    <Content Include="images\img\img %28878%29.jpeg" />
+    <Content Include="images\img\img %28879%29.jpeg" />
+    <Content Include="images\img\img %2888%29.jpeg" />
+    <Content Include="images\img\img %28880%29.jpeg" />
+    <Content Include="images\img\img %28881%29.jpeg" />
+    <Content Include="images\img\img %28882%29.jpeg" />
+    <Content Include="images\img\img %28883%29.jpeg" />
+    <Content Include="images\img\img %28884%29.jpeg" />
+    <Content Include="images\img\img %28885%29.jpeg" />
+    <Content Include="images\img\img %28886%29.jpeg" />
+    <Content Include="images\img\img %28887%29.jpeg" />
+    <Content Include="images\img\img %28888%29.jpeg" />
+    <Content Include="images\img\img %28889%29.jpeg" />
+    <Content Include="images\img\img %2889%29.jpeg" />
+    <Content Include="images\img\img %28890%29.jpeg" />
+    <Content Include="images\img\img %28891%29.jpeg" />
+    <Content Include="images\img\img %28892%29.jpeg" />
+    <Content Include="images\img\img %28893%29.jpeg" />
+    <Content Include="images\img\img %28894%29.jpeg" />
+    <Content Include="images\img\img %28895%29.jpeg" />
+    <Content Include="images\img\img %28896%29.jpeg" />
+    <Content Include="images\img\img %28897%29.jpeg" />
+    <Content Include="images\img\img %28898%29.jpeg" />
+    <Content Include="images\img\img %28899%29.jpeg" />
+    <Content Include="images\img\img %289%29.jpeg" />
+    <Content Include="images\img\img %2890%29.jpeg" />
+    <Content Include="images\img\img %28900%29.jpeg" />
+    <Content Include="images\img\img %28901%29.jpeg" />
+    <Content Include="images\img\img %28902%29.jpeg" />
+    <Content Include="images\img\img %28903%29.jpeg" />
+    <Content Include="images\img\img %28904%29.jpeg" />
+    <Content Include="images\img\img %28905%29.jpeg" />
+    <Content Include="images\img\img %28906%29.jpeg" />
+    <Content Include="images\img\img %28907%29.jpeg" />
+    <Content Include="images\img\img %28908%29.jpeg" />
+    <Content Include="images\img\img %28909%29.jpeg" />
+    <Content Include="images\img\img %2891%29.jpeg" />
+    <Content Include="images\img\img %28910%29.jpeg" />
+    <Content Include="images\img\img %28911%29.jpeg" />
+    <Content Include="images\img\img %28912%29.jpeg" />
+    <Content Include="images\img\img %28913%29.jpeg" />
+    <Content Include="images\img\img %28914%29.jpeg" />
+    <Content Include="images\img\img %28915%29.jpeg" />
+    <Content Include="images\img\img %28916%29.jpeg" />
+    <Content Include="images\img\img %28917%29.jpeg" />
+    <Content Include="images\img\img %28918%29.jpeg" />
+    <Content Include="images\img\img %28919%29.jpeg" />
+    <Content Include="images\img\img %2892%29.jpeg" />
+    <Content Include="images\img\img %28920%29.jpeg" />
+    <Content Include="images\img\img %28921%29.jpeg" />
+    <Content Include="images\img\img %28922%29.jpeg" />
+    <Content Include="images\img\img %28923%29.jpeg" />
+    <Content Include="images\img\img %28924%29.jpeg" />
+    <Content Include="images\img\img %28925%29.jpeg" />
+    <Content Include="images\img\img %28926%29.jpeg" />
+    <Content Include="images\img\img %28927%29.jpeg" />
+    <Content Include="images\img\img %28928%29.jpeg" />
+    <Content Include="images\img\img %28929%29.jpeg" />
+    <Content Include="images\img\img %2893%29.jpeg" />
+    <Content Include="images\img\img %28930%29.jpeg" />
+    <Content Include="images\img\img %28931%29.jpeg" />
+    <Content Include="images\img\img %28932%29.jpeg" />
+    <Content Include="images\img\img %28933%29.jpeg" />
+    <Content Include="images\img\img %28934%29.jpeg" />
+    <Content Include="images\img\img %28935%29.jpeg" />
+    <Content Include="images\img\img %28936%29.jpeg" />
+    <Content Include="images\img\img %28937%29.jpeg" />
+    <Content Include="images\img\img %28938%29.jpeg" />
+    <Content Include="images\img\img %28939%29.jpeg" />
+    <Content Include="images\img\img %2894%29.jpeg" />
+    <Content Include="images\img\img %28940%29.jpeg" />
+    <Content Include="images\img\img %28941%29.jpeg" />
+    <Content Include="images\img\img %28942%29.jpeg" />
+    <Content Include="images\img\img %28943%29.jpeg" />
+    <Content Include="images\img\img %28944%29.jpeg" />
+    <Content Include="images\img\img %28945%29.jpeg" />
+    <Content Include="images\img\img %28946%29.jpeg" />
+    <Content Include="images\img\img %28947%29.jpeg" />
+    <Content Include="images\img\img %28948%29.jpeg" />
+    <Content Include="images\img\img %28949%29.jpeg" />
+    <Content Include="images\img\img %2895%29.jpeg" />
+    <Content Include="images\img\img %28950%29.jpeg" />
+    <Content Include="images\img\img %28951%29.jpeg" />
+    <Content Include="images\img\img %28952%29.jpeg" />
+    <Content Include="images\img\img %28953%29.jpeg" />
+    <Content Include="images\img\img %28954%29.jpeg" />
+    <Content Include="images\img\img %28955%29.jpeg" />
+    <Content Include="images\img\img %28956%29.jpeg" />
+    <Content Include="images\img\img %28957%29.jpeg" />
+    <Content Include="images\img\img %28958%29.jpeg" />
+    <Content Include="images\img\img %28959%29.jpeg" />
+    <Content Include="images\img\img %2896%29.jpeg" />
+    <Content Include="images\img\img %28960%29.jpeg" />
+    <Content Include="images\img\img %28961%29.jpeg" />
+    <Content Include="images\img\img %28962%29.jpeg" />
+    <Content Include="images\img\img %28963%29.jpeg" />
+    <Content Include="images\img\img %28964%29.jpeg" />
+    <Content Include="images\img\img %28965%29.jpeg" />
+    <Content Include="images\img\img %28966%29.jpeg" />
+    <Content Include="images\img\img %28967%29.jpeg" />
+    <Content Include="images\img\img %28968%29.jpeg" />
+    <Content Include="images\img\img %28969%29.jpeg" />
+    <Content Include="images\img\img %2897%29.jpeg" />
+    <Content Include="images\img\img %28970%29.jpeg" />
+    <Content Include="images\img\img %28971%29.jpeg" />
+    <Content Include="images\img\img %28972%29.jpeg" />
+    <Content Include="images\img\img %28973%29.jpeg" />
+    <Content Include="images\img\img %28974%29.jpeg" />
+    <Content Include="images\img\img %28975%29.jpeg" />
+    <Content Include="images\img\img %28976%29.jpeg" />
+    <Content Include="images\img\img %28977%29.jpeg" />
+    <Content Include="images\img\img %28978%29.jpeg" />
+    <Content Include="images\img\img %28979%29.jpeg" />
+    <Content Include="images\img\img %2898%29.jpeg" />
+    <Content Include="images\img\img %28980%29.jpeg" />
+    <Content Include="images\img\img %28981%29.jpeg" />
+    <Content Include="images\img\img %28982%29.jpeg" />
+    <Content Include="images\img\img %28983%29.jpeg" />
+    <Content Include="images\img\img %28984%29.jpeg" />
+    <Content Include="images\img\img %28985%29.jpeg" />
+    <Content Include="images\img\img %28986%29.jpeg" />
+    <Content Include="images\img\img %28987%29.jpeg" />
+    <Content Include="images\img\img %28988%29.jpeg" />
+    <Content Include="images\img\img %28989%29.jpeg" />
+    <Content Include="images\img\img %2899%29.jpeg" />
+    <Content Include="images\img\img %28990%29.jpeg" />
+    <Content Include="images\img\img %28991%29.jpeg" />
+    <Content Include="images\img\img %28992%29.jpeg" />
+    <Content Include="images\img\img %28993%29.jpeg" />
+    <Content Include="images\img\img %28994%29.jpeg" />
+    <Content Include="images\img\img %28995%29.jpeg" />
+    <Content Include="images\img\img %28996%29.jpeg" />
+    <Content Include="images\img\img %28997%29.jpeg" />
+    <Content Include="images\img\img %28998%29.jpeg" />
+    <Content Include="images\img\img %28999%29.jpeg" />
+    <Content Include="images\kefu.jpg" />
+    <Content Include="images\lose-bg.png" />
+    <Content Include="images\maotouying.jpg" />
+    <Content Include="images\modelnull.jpg" />
+    <Content Include="images\null.png" />
+    <Content Include="images\pic1.png" />
+    <Content Include="images\pinglun.png" />
+    <Content Include="images\shang.png" />
+    <Content Include="images\shangchuan1.png" />
+    <Content Include="images\soucang.png" />
+    <Content Include="images\soucang_b.png" />
+    <Content Include="images\soucang_h.png" />
+    <Content Include="images\soucang_hb.png" />
+    <Content Include="images\touxiang1.png" />
+    <Content Include="images\xia.png" />
+    <Content Include="images\xiajia.png" />
+    <Content Include="Inc\form_validate.css" />
+    <Content Include="Inc\jquery-1.8.0.min.js" />
+    <Content Include="Inc\jquery.date_input.js" />
+    <Content Include="Inc\jquery.min.js" />
+    <Content Include="Inc\jquery.validator.pack.js" />
+    <Content Include="Inc\page.css" />
+    <Content Include="Inc\page.html" />
+    <Content Include="Inc\png.js" />
+    <Content Include="Inc\script.js" />
+    <Content Include="Inc\select.js" />
+    <Content Include="Inc\Upload_Img.aspx" />
+    <Content Include="Inc\uptouxiang.aspx" />
+    <Content Include="Inc\vtip_arrow.png" />
+    <Content Include="Inc\x0popup.min.pc.css" />
+    <Content Include="Inc\x0popup.min.pc.js" />
+    <Content Include="index.aspx" />
+    <Content Include="LiteratureBatchDownload.ashx" />
+    <Content Include="LiteratureInfo.aspx" />
+    <Content Include="LiteratureSearch.aspx" />
+    <Content Include="LiteratureVenue.aspx" />
+    <Content Include="js.ascx" />
+    <Content Include="js\ajaxfileupload.js" />
+    <Content Include="js\infinite-scroll.pkgd.min.js" />
+    <Content Include="js\jigsaw.js" />
+    <Content Include="js\jquery-1.11.3.min.js" />
+    <Content Include="js\jquery.infinitescroll.js" />
+    <Content Include="js\layui.js" />
+    <Content Include="js\qrcode.min.js" />
+    <Content Include="js\swiper-bundle.min.js" />
+    <Content Include="LoginOut.aspx" />
+                            <Content Include="Search.aspx" />
+    <Content Include="top-up.aspx" />
+    <Content Include="top.ascx" />
+    <Content Include="UserCenter\Account.aspx" />
+    <Content Include="UserCenter\Appeal.aspx" />
+    <Content Include="UserCenter\Center.aspx" />
+    <Content Include="UserCenter\IntegrateExchange.aspx" />
+    <Content Include="UserCenter\IntegrateExchangeLog.aspx" />
+    <Content Include="UserCenter\IntegrateLog.aspx" />
+    <Content Include="UserCenter\IntegrateWithdrawal.aspx" />
+    <Content Include="UserCenter\left.ascx" />
+                                                    <Content Include="UserCenter\LiteratureUpload.aspx" />
+            <Content Include="UserCenter\MsgLog.aspx" />
+    <Content Include="UserCenter\NoticeLog.aspx" />
+    <Content Include="UserCenter\ServiceLog.aspx" />
+    <Content Include="UserCenter\ServiceLogAdd.aspx" />
+    <Content Include="UserCenter\ServiceLogInfo.aspx" />
+    <Content Include="UserCenter\UserJs.ascx" />
+    <Content Include="Web.config" />
+    <Content Include="WebsiteData\AdSingle.aspx" />
+    <Content Include="WebsiteData\News.aspx" />
+    <Content Include="WebsiteData\NewsInfo.aspx" />
+    <Content Include="WebsiteData\Single.aspx" />
+    <Content Include="wx_pay_notify.aspx" />
+  </ItemGroup>
+  <ItemGroup>    <Compile Include="admin\Admin_DaoRuInfo.aspx.cs">
+      <DependentUpon>Admin_DaoRuInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_DaoRuInfo.aspx.designer.cs">
+      <DependentUpon>Admin_DaoRuInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateAdd.aspx.cs">
+      <DependentUpon>Admin_IntegrateAdd.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateAdd.aspx.designer.cs">
+      <DependentUpon>Admin_IntegrateAdd.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateLogList.aspx.cs">
+      <DependentUpon>Admin_IntegrateLogList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateLogList.aspx.designer.cs">
+      <DependentUpon>Admin_IntegrateLogList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_AppealList.aspx.cs">
+      <DependentUpon>Admin_AppealList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_AppealList.aspx.designer.cs">
+      <DependentUpon>Admin_AppealList.aspx</DependentUpon>
+    </Compile>    <Compile Include="admin\Admin_IndexSingleList.aspx.cs">
+      <DependentUpon>Admin_IndexSingleList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_IndexSingleList.aspx.designer.cs">
+      <DependentUpon>Admin_IndexSingleList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateExchangeLog.aspx.cs">
+      <DependentUpon>Admin_IntegrateExchangeLog.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateExchangeLog.aspx.designer.cs">
+      <DependentUpon>Admin_IntegrateExchangeLog.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateList.aspx.cs">
+      <DependentUpon>Admin_IntegrateList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateList.aspx.designer.cs">
+      <DependentUpon>Admin_IntegrateList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateLogTypeList.aspx.cs">
+      <DependentUpon>Admin_IntegrateLogTypeList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateLogTypeList.aspx.designer.cs">
+      <DependentUpon>Admin_IntegrateLogTypeList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateRedemptionList.aspx.cs">
+      <DependentUpon>Admin_IntegrateRedemptionList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateRedemptionList.aspx.designer.cs">
+      <DependentUpon>Admin_IntegrateRedemptionList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateWithdrawalConfigure.aspx.cs">
+      <DependentUpon>Admin_IntegrateWithdrawalConfigure.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_IntegrateWithdrawalConfigure.aspx.designer.cs">
+      <DependentUpon>Admin_IntegrateWithdrawalConfigure.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureCategory.aspx.cs">
+      <DependentUpon>Admin_LiteratureCategory.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureCategory.aspx.designer.cs">
+      <DependentUpon>Admin_LiteratureCategory.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureCommentList.aspx.cs">
+      <DependentUpon>Admin_LiteratureCommentList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureCommentList.aspx.designer.cs">
+      <DependentUpon>Admin_LiteratureCommentList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureEdit.aspx.cs">
+      <DependentUpon>Admin_LiteratureEdit.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureEdit.aspx.designer.cs">
+      <DependentUpon>Admin_LiteratureEdit.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureInfo.aspx.cs">
+      <DependentUpon>Admin_LiteratureInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureInfo.aspx.designer.cs">
+      <DependentUpon>Admin_LiteratureInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureImport.aspx.cs">
+      <DependentUpon>Admin_LiteratureImport.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureImport.aspx.designer.cs">
+      <DependentUpon>Admin_LiteratureImport.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureImportError.aspx.cs">
+      <DependentUpon>Admin_LiteratureImportError.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureImportError.aspx.designer.cs">
+      <DependentUpon>Admin_LiteratureImportError.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureList.aspx.cs">
+      <DependentUpon>Admin_LiteratureList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureList.aspx.designer.cs">
+      <DependentUpon>Admin_LiteratureList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureTag.aspx.cs">
+      <DependentUpon>Admin_LiteratureTag.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureTag.aspx.designer.cs">
+      <DependentUpon>Admin_LiteratureTag.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureVenueProfile.aspx.cs">
+      <DependentUpon>Admin_LiteratureVenueProfile.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LiteratureVenueProfile.aspx.designer.cs">
+      <DependentUpon>Admin_LiteratureVenueProfile.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LoginSingle.aspx.cs">
+      <DependentUpon>Admin_LoginSingle.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LoginSingle.aspx.designer.cs">
+      <DependentUpon>Admin_LoginSingle.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_Admin.aspx.cs">
+      <DependentUpon>Admin_Admin.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_Admin.aspx.designer.cs">
+      <DependentUpon>Admin_Admin.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_AdminUpPwd.aspx.cs">
+      <DependentUpon>Admin_AdminUpPwd.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_AdminUpPwd.aspx.designer.cs">
+      <DependentUpon>Admin_AdminUpPwd.aspx</DependentUpon>
+    </Compile>    <Compile Include="admin\Admin_DataImgInfo.aspx.cs">
+      <DependentUpon>Admin_DataImgInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_DataImgInfo.aspx.designer.cs">
+      <DependentUpon>Admin_DataImgInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_FootIconLinkList.aspx.cs">
+      <DependentUpon>Admin_FootIconLinkList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_FootIconLinkList.aspx.designer.cs">
+      <DependentUpon>Admin_FootIconLinkList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_LinkType.aspx.cs">
+      <DependentUpon>Admin_LinkType.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_LinkType.aspx.designer.cs">
+      <DependentUpon>Admin_LinkType.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_Log.aspx.cs">
+      <DependentUpon>Admin_Log.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_Log.aspx.designer.cs">
+      <DependentUpon>Admin_Log.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_Model.aspx.cs">
+      <DependentUpon>Admin_Model.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_Model.aspx.designer.cs">
+      <DependentUpon>Admin_Model.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_Null.aspx.cs">
+      <DependentUpon>Admin_Null.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_Null.aspx.designer.cs">
+      <DependentUpon>Admin_Null.aspx</DependentUpon>
+    </Compile>
+                                                                                                                            <Compile Include="admin\Admin_SearchHotList.aspx.cs">
+      <DependentUpon>Admin_SearchHotList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_SearchHotList.aspx.designer.cs">
+      <DependentUpon>Admin_SearchHotList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_ServerInfo.aspx.cs">
+      <DependentUpon>Admin_ServerInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_ServerInfo.aspx.designer.cs">
+      <DependentUpon>Admin_ServerInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_ServiceLogInfo.aspx.cs">
+      <DependentUpon>Admin_ServiceLogInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_ServiceLogInfo.aspx.designer.cs">
+      <DependentUpon>Admin_ServiceLogInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_ServiceLogList.aspx.cs">
+      <DependentUpon>Admin_ServiceLogList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_ServiceLogList.aspx.designer.cs">
+      <DependentUpon>Admin_ServiceLogList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_SiteInfo.aspx.cs">
+      <DependentUpon>Admin_SiteInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_SiteInfo.aspx.designer.cs">
+      <DependentUpon>Admin_SiteInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_SiteMenu.aspx.cs">
+      <DependentUpon>Admin_SiteMenu.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_SiteMenu.aspx.designer.cs">
+      <DependentUpon>Admin_SiteMenu.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_TopUpTypeConfigure.aspx.cs">
+      <DependentUpon>Admin_TopUpTypeConfigure.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_TopUpTypeConfigure.aspx.designer.cs">
+      <DependentUpon>Admin_TopUpTypeConfigure.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_TopUpTypeList.aspx.cs">
+      <DependentUpon>Admin_TopUpTypeList.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_TopUpTypeList.aspx.designer.cs">
+      <DependentUpon>Admin_TopUpTypeList.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_WebsiteEmail.aspx.cs">
+      <DependentUpon>Admin_WebsiteEmail.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_WebsiteEmail.aspx.designer.cs">
+      <DependentUpon>Admin_WebsiteEmail.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Admin_WebsiteInfo.aspx.cs">
+      <DependentUpon>Admin_WebsiteInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_WebsiteInfo.aspx.designer.cs">
+      <DependentUpon>Admin_WebsiteInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Ajax.ashx.cs">
+      <DependentUpon>Ajax.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\PdfParse.ashx.cs">
+      <DependentUpon>PdfParse.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\class_menu.ascx.cs">
+      <DependentUpon>class_menu.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\class_menu.ascx.designer.cs">
+      <DependentUpon>class_menu.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Code.aspx.cs">
+      <DependentUpon>Code.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Code.aspx.designer.cs">
+      <DependentUpon>Code.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Inc.ascx.cs">
+      <DependentUpon>Inc.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Inc.ascx.designer.cs">
+      <DependentUpon>Inc.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Index.aspx.cs">
+      <DependentUpon>Index.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Index.aspx.designer.cs">
+      <DependentUpon>Index.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Jsmenu.ascx.cs">
+      <DependentUpon>Jsmenu.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Jsmenu.ascx.designer.cs">
+      <DependentUpon>Jsmenu.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Left.aspx.cs">
+      <DependentUpon>Left.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Left.aspx.designer.cs">
+      <DependentUpon>Left.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\load.aspx.cs">
+      <DependentUpon>load.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\load.aspx.designer.cs">
+      <DependentUpon>load.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Login.aspx.cs">
+      <DependentUpon>Login.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Login.aspx.designer.cs">
+      <DependentUpon>Login.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="admin\Right.aspx.cs">
+      <DependentUpon>Right.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Right.aspx.designer.cs">
+      <DependentUpon>Right.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="A_Uploadify\UpDownloadHandler.aspx.cs">
+      <DependentUpon>UpDownloadHandler.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="A_UpLoadTool\tool\upload_json.aspx.cs">
+      <DependentUpon>upload_json.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="code_tel.ascx.cs">
+      <DependentUpon>code_tel.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="code_tel.ascx.designer.cs">
+      <DependentUpon>code_tel.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="css.ascx.cs">
+      <DependentUpon>css.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="css.ascx.designer.cs">
+      <DependentUpon>css.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="err.aspx.cs">
+      <DependentUpon>err.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="err.aspx.designer.cs">
+      <DependentUpon>err.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="foot.ascx.cs">
+      <DependentUpon>foot.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="foot.ascx.designer.cs">
+      <DependentUpon>foot.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="Inc\Upload_Img.aspx.cs">
+      <DependentUpon>Upload_Img.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Inc\Upload_Img.aspx.designer.cs">
+      <DependentUpon>Upload_Img.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Inc\uptouxiang.aspx.cs">
+      <DependentUpon>uptouxiang.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Inc\uptouxiang.aspx.designer.cs">
+      <DependentUpon>uptouxiang.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Inc\UserCommon.ashx.cs">
+      <DependentUpon>UserCommon.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="index.aspx.cs">
+      <DependentUpon>index.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="index.aspx.designer.cs">
+      <DependentUpon>index.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="LiteratureBatchDownload.ashx.cs">
+      <DependentUpon>LiteratureBatchDownload.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="LiteratureInfo.aspx.cs">
+      <DependentUpon>LiteratureInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="LiteratureInfo.aspx.designer.cs">
+      <DependentUpon>LiteratureInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="LiteratureSearch.aspx.cs">
+      <DependentUpon>LiteratureSearch.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="LiteratureSearch.aspx.designer.cs">
+      <DependentUpon>LiteratureSearch.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="LiteratureVenue.aspx.cs">
+      <DependentUpon>LiteratureVenue.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="LiteratureVenue.aspx.designer.cs">
+      <DependentUpon>LiteratureVenue.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="js.ascx.cs">
+      <DependentUpon>js.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="js.ascx.designer.cs">
+      <DependentUpon>js.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="LoginOut.aspx.cs">
+      <DependentUpon>LoginOut.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="LoginOut.aspx.designer.cs">
+      <DependentUpon>LoginOut.aspx</DependentUpon>
+    </Compile>
+                                                    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Search.aspx.cs">
+      <DependentUpon>Search.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Search.aspx.designer.cs">
+      <DependentUpon>Search.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="top-up.aspx.cs">
+      <DependentUpon>top-up.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="top-up.aspx.designer.cs">
+      <DependentUpon>top-up.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="top.ascx.cs">
+      <DependentUpon>top.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="top.ascx.designer.cs">
+      <DependentUpon>top.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\Account.aspx.cs">
+      <DependentUpon>Account.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\Account.aspx.designer.cs">
+      <DependentUpon>Account.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\Appeal.aspx.cs">
+      <DependentUpon>Appeal.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\Appeal.aspx.designer.cs">
+      <DependentUpon>Appeal.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\Center.aspx.cs">
+      <DependentUpon>Center.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\Center.aspx.designer.cs">
+      <DependentUpon>Center.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\IntegrateExchange.aspx.cs">
+      <DependentUpon>IntegrateExchange.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\IntegrateExchange.aspx.designer.cs">
+      <DependentUpon>IntegrateExchange.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\IntegrateExchangeLog.aspx.cs">
+      <DependentUpon>IntegrateExchangeLog.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\IntegrateExchangeLog.aspx.designer.cs">
+      <DependentUpon>IntegrateExchangeLog.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\IntegrateLog.aspx.cs">
+      <DependentUpon>IntegrateLog.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\IntegrateLog.aspx.designer.cs">
+      <DependentUpon>IntegrateLog.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\IntegrateWithdrawal.aspx.cs">
+      <DependentUpon>IntegrateWithdrawal.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\IntegrateWithdrawal.aspx.designer.cs">
+      <DependentUpon>IntegrateWithdrawal.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\left.ascx.cs">
+      <DependentUpon>left.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\left.ascx.designer.cs">
+      <DependentUpon>left.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\LiteratureUpload.aspx.cs">
+      <DependentUpon>LiteratureUpload.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\LiteratureUpload.aspx.designer.cs">
+      <DependentUpon>LiteratureUpload.aspx</DependentUpon>
+    </Compile>
+                                                                                                                    <Compile Include="UserCenter\MsgLog.aspx.cs">
+      <DependentUpon>MsgLog.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\MsgLog.aspx.designer.cs">
+      <DependentUpon>MsgLog.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\NoticeLog.aspx.cs">
+      <DependentUpon>NoticeLog.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\NoticeLog.aspx.designer.cs">
+      <DependentUpon>NoticeLog.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\ServiceLog.aspx.cs">
+      <DependentUpon>ServiceLog.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\ServiceLog.aspx.designer.cs">
+      <DependentUpon>ServiceLog.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\ServiceLogAdd.aspx.cs">
+      <DependentUpon>ServiceLogAdd.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\ServiceLogAdd.aspx.designer.cs">
+      <DependentUpon>ServiceLogAdd.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\ServiceLogInfo.aspx.cs">
+      <DependentUpon>ServiceLogInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\ServiceLogInfo.aspx.designer.cs">
+      <DependentUpon>ServiceLogInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserCenter\UserJs.ascx.cs">
+      <DependentUpon>UserJs.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserCenter\UserJs.ascx.designer.cs">
+      <DependentUpon>UserJs.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="WebsiteData\AdSingle.aspx.cs">
+      <DependentUpon>AdSingle.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="WebsiteData\AdSingle.aspx.designer.cs">
+      <DependentUpon>AdSingle.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="WebsiteData\News.aspx.cs">
+      <DependentUpon>News.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="WebsiteData\News.aspx.designer.cs">
+      <DependentUpon>News.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="WebsiteData\NewsInfo.aspx.cs">
+      <DependentUpon>NewsInfo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="WebsiteData\NewsInfo.aspx.designer.cs">
+      <DependentUpon>NewsInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="WebsiteData\Single.aspx.cs">
+      <DependentUpon>Single.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="WebsiteData\Single.aspx.designer.cs">
+      <DependentUpon>Single.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="wx_pay_notify.aspx.cs">
+      <DependentUpon>wx_pay_notify.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="wx_pay_notify.aspx.designer.cs">
+      <DependentUpon>wx_pay_notify.aspx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="A_UpLoadTool\tool\file_manager_json.ashx" />
+    <Content Include="A_UpLoadTool\tool\upload_json.ashx" />
+    <Content Include="admin\Ajax.ashx" />
+    <Content Include="admin\PdfParse.ashx" />
+    <Content Include="admin\fonts\iconfont.eot" />
+    <Content Include="admin\fonts\iconfont.ttf" />
+    <Content Include="admin\fonts\iconfont.woff" />
+    <Content Include="admin\fonts\iconfont.woff2" />
+    <Content Include="fonts\iconfont.eot" />
+    <Content Include="fonts\iconfont.ttf" />
+    <Content Include="fonts\iconfont.woff" />
+    <Content Include="fonts\iconfont.woff2" />
+    <Content Include="Inc\UserCommon.ashx" />
+    <Content Include="admin\iconfont\iconfont.json" />
+    <Content Include="admin\iconfont\iconfont.ttf" />
+    <Content Include="admin\iconfont\iconfont.woff" />
+    <Content Include="admin\iconfont\iconfont.woff2" />
+    <Content Include="admin\excel_.xlsx" />
+            <Content Include="cert\apiclient_cert.p12" />
+    <Content Include="cert\apiclient_cert.pem" />
+    <Content Include="cert\apiclient_key.pem" />
+    <None Include="packages.config" />
+    <None Include="Properties\PublishProfiles\manage.pubxml" />
+    <None Include="Properties\PublishProfiles\muya3d.pubxml" />
+    <None Include="Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+    <None Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="admin\Excel\" />
+    <Folder Include="A_UpLoad\file\" />
+    <Folder Include="A_UpLoad\image\" />
+    <Folder Include="A_UpLoad\media\" />
+    <Folder Include="A_UpLoad\upload_file\upload_file_pro\" />
+    <Folder Include="A_UpLoad\upload_pic\upload_pic_pro\" />
+    <Folder Include="Log\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LiteratureManager.Common\LiteratureManager.Common.csproj">
+      <Project>{6e2ddc02-f75b-463c-94c3-a848e2aa15f1}</Project>
+      <Name>LiteratureManager.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\BLL\BLL.csproj">
+      <Project>{6873e985-753a-40fd-bddc-863bd80de6b7}</Project>
+      <Name>BLL</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{a181b6d8-9b45-46f2-95ca-19c5945381cf}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DAL\DAL.csproj">
+      <Project>{28180ff9-8538-48af-9260-209f2c181869}</Project>
+      <Name>DAL</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Model\Model.csproj">
+      <Project>{282233fa-7de7-4fa2-9a12-cb980895c4e8}</Project>
+      <Name>Model</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
+  </ItemGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets')" />
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>True</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>65308</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>https://localhost:44383/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>False</UseCustomServer>
+          <CustomServerUrl>
+          </CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>这台计算机上缺少此项目引用的 NuGet 程序包。使用“NuGet 程序包还原”可下载这些程序包。有关更多信息，请参见 http://go.microsoft.com/fwlink/?LinkID=322105。缺少的文件是 {0}。</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
+  </Target>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
+
+
