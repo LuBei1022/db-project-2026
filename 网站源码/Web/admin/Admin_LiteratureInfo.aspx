@@ -18,6 +18,11 @@
         .lit-info-grid { display: grid; grid-template-columns: 140px 1fr; gap: 10px 16px; }
         .lit-info-grid .label { color: #86868b; }
         .lit-info-grid .value { color: #1d1d1f; word-break: break-word; }
+        .lit-admin-author-affiliations { display: grid; gap: 8px; }
+        .lit-admin-author-affiliations div { display: grid; grid-template-columns: minmax(120px, 220px) 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #e5e5ea; }
+        .lit-admin-author-affiliations div:last-child { border-bottom: 0; }
+        .lit-admin-author-affiliations strong { color: #1d1d1f; }
+        .lit-admin-author-affiliations span { color: #515864; line-height: 1.7; }
         .lit-info-section-title { margin: 0 0 14px; color: #1d1d1f; font-size: 18px; font-weight: 700; }
         .lit-pdf-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
         .lit-pdf-head strong { color: #1d1d1f; }

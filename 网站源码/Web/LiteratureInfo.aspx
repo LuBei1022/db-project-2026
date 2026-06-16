@@ -21,6 +21,11 @@
         .lit-detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 10px 18px; margin-bottom: 26px; }
         .lit-detail-grid .label { color: #6f7d8d; }
         .lit-detail-grid .value { color: #223548; }
+        .lit-author-institution-list { display: grid; gap: 8px; }
+        .lit-author-institution-list div { display: grid; grid-template-columns: minmax(120px, 220px) 1fr; gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px dashed #e4ebf4; }
+        .lit-author-institution-list div:last-child { border-bottom: 0; }
+        .lit-author-institution-list strong { color: #172b40; }
+        .lit-author-institution-list span { color: #526174; line-height: 1.7; }
         .lit-detail-section { margin-top: 26px; }
         .lit-detail-section h3 { margin: 0 0 12px; font-size: 20px; color: #1b2b3b; }
         .lit-detail-section p { margin: 0; color: #49596b; line-height: 1.9; white-space: pre-wrap; }
@@ -75,6 +80,14 @@
         .lit-owner-meta-field span { display: block; margin-bottom: 7px; }
         .lit-owner-meta-field input, .lit-owner-meta-field textarea { width: 100%; box-sizing: border-box; border: 1px solid #dce5ef; border-radius: 10px; padding: 11px 12px; color: #172b40; font: inherit; line-height: 1.6; }
         .lit-owner-meta-field textarea { min-height: 120px; resize: vertical; }
+        .lit-owner-author-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0 10px; color: #526174; font-weight: 700; }
+        .lit-owner-author-actions button { border: 1px solid #dce5ef; border-radius: 10px; background: #f7fbff; color: #1d6fdc; padding: 7px 10px; cursor: pointer; font: inherit; }
+        .lit-owner-author-editor { display: grid; gap: 10px; margin-bottom: 8px; }
+        .lit-owner-author-row { display: grid; grid-template-columns: minmax(150px, 220px) minmax(260px, 1fr); gap: 10px; align-items: start; }
+        .lit-owner-author-row input, .lit-owner-author-row textarea { width: 100%; box-sizing: border-box; border: 1px solid #dce5ef; border-radius: 10px; padding: 10px 12px; color: #172b40; font: inherit; line-height: 1.6; }
+        .lit-owner-author-row textarea { min-height: 52px; resize: vertical; }
+        .lit-owner-author-hint { color: #7b8794; font-size: 13px; line-height: 1.7; margin: 0 0 12px; }
+        .lit-owner-author-refresh-status { color: #1d6fdc; font-size: 13px; line-height: 1.6; margin: -2px 0 10px; }
         .lit-modal-mask { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(15, 28, 44, .48); align-items: center; justify-content: center; padding: 20px; }
         .lit-modal-mask.show { display: flex; }
         body.lit-modal-open { overflow: hidden; }
@@ -134,12 +147,14 @@
             .lit-detail-grid { grid-template-columns: 1fr; }
             .lit-detail-actions, .lit-detail-tools { align-items: stretch; }
             .lit-detail-actions a, .lit-detail-actions span, .lit-detail-tools a, .lit-detail-tools button { width: 100%; }
+            .lit-author-institution-list div { grid-template-columns: 1fr; gap: 4px; }
             .lit-download-form { width: 100%; flex-wrap: wrap; }
             .lit-download-form .lit-pay-title { width: 100%; }
             .lit-owner-panel-head { align-items: flex-start; flex-direction: column; }
             .lit-owner-panel-head a, .lit-owner-panel-actions, .lit-owner-panel-actions button { width: 100%; }
             .lit-owner-stats { grid-template-columns: 1fr; }
             .lit-owner-meta-grid { grid-template-columns: 1fr; }
+            .lit-owner-author-row { grid-template-columns: 1fr; }
             .lit-comments-head { align-items: flex-start; flex-direction: column; }
             .lit-comments-count { white-space: normal; }
             .lit-comment-main { gap: 10px; }
@@ -181,6 +196,7 @@
                     <div class="lit-detail-grid">
                         <div class="label">DOI</div><div class="value"><%=doi %></div>
                         <div class="label">&#20316;&#32773;&#21333;&#20301;</div><div class="value"><%=institution %></div>
+                        <div class="label">&#20316;&#32773;&#26426;&#26500;&#23545;&#24212;</div><div class="value"><%=authorInstitutionHtml %></div>
                                     <div class="label">&#26399;&#21002;</div><div class="value"><%=journalName %></div>
                         <div class="label">&#20250;&#35758;</div><div class="value"><%=conferenceName %></div>
                         <div class="label">&#20851;&#38190;&#35789;</div><div class="value"><%=keywords %></div>
@@ -325,6 +341,140 @@
         function closeOwnerMetadataModal() {
             $("#ownerMetadataModal").removeClass("show");
             closeModalScrollLockIfNoneOpen();
+        }
+
+        function escapeOwnerAuthorHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function ownerAuthorHasChinese(value) {
+            return /[\u3400-\u9fff\uf900-\ufaff]/.test(value || "");
+        }
+
+        function trimOwnerText(value) {
+            return String(value || "").replace(/^\s+|\s+$/g, "");
+        }
+
+        function splitOwnerAuthorNames(value) {
+            var text = String(value || "").replace(/\band\b/ig, ",");
+            var parts = text.split(/[,\uff0c;\uff1b|\u3001\r\n]+/);
+            var result = [];
+            for (var i = 0; i < parts.length; i++) {
+                var current = trimOwnerText(parts[i]);
+                if (current) {
+                    result.push(current);
+                }
+            }
+            return result;
+        }
+
+        function splitOwnerAffiliations(value) {
+            var parts = String(value || "").split(/[;\uff1b|\r\n]+/);
+            var result = [];
+            for (var i = 0; i < parts.length; i++) {
+                var current = trimOwnerText(parts[i]);
+                if (current && result.indexOf(current) < 0) {
+                    result.push(current);
+                }
+            }
+            return result;
+        }
+
+        function refreshOwnerAuthorRows() {
+            var editor = document.getElementById("ownerAuthorEditor");
+            if (!editor) {
+                return;
+            }
+            var authorInput = document.querySelector("#ownerMetadataModal input[name='owner_author_names']");
+            var institutionInput = document.querySelector("#ownerMetadataModal input[name='owner_institution']");
+            var names = splitOwnerAuthorNames(authorInput ? authorInput.value : "");
+            var existing = {};
+            var oldRows = editor.querySelectorAll(".lit-owner-author-row");
+            for (var oldIndex = 0; oldIndex < oldRows.length; oldIndex++) {
+                var oldNameInput = oldRows[oldIndex].querySelector("[data-owner-author-name]");
+                var oldAffiliationInput = oldRows[oldIndex].querySelector("[data-owner-author-affiliation]");
+                var oldName = trimOwnerText(oldNameInput ? oldNameInput.value : "");
+                if (oldName) {
+                    existing[oldName.toLowerCase()] = oldAffiliationInput ? oldAffiliationInput.value : "";
+                }
+            }
+            var inferredAffiliations = splitOwnerAffiliations(institutionInput ? institutionInput.value : "");
+            editor.innerHTML = "";
+            if (names.length === 0) {
+                editor.innerHTML = "<div class=\"lit-owner-author-hint\">请先填写作者姓名，再生成作者机构对应关系。</div>";
+                updateOwnerAuthorRefreshStatus("没有检测到作者姓名，请先填写作者字段。");
+                return;
+            }
+            for (var i = 0; i < names.length; i++) {
+                var affiliation = existing[names[i].toLowerCase()] || "";
+                if (!affiliation && inferredAffiliations.length === names.length) {
+                    affiliation = inferredAffiliations[i] || "";
+                }
+                var row = document.createElement("div");
+                row.className = "lit-owner-author-row";
+                row.setAttribute("data-author-id", "0");
+                row.setAttribute("data-original-name", names[i]);
+                row.innerHTML =
+                    "<input type=\"text\" data-owner-author-name=\"1\" value=\"" + escapeOwnerAuthorHtml(names[i]) + "\" placeholder=\"作者姓名\" />" +
+                    "<textarea data-owner-author-affiliation=\"1\" placeholder=\"该作者在本文中的机构；多个机构用分号分隔\">" + escapeOwnerAuthorHtml(affiliation) + "</textarea>";
+                editor.appendChild(row);
+            }
+            if (inferredAffiliations.length > 0 && inferredAffiliations.length !== names.length) {
+                updateOwnerAuthorRefreshStatus("已按作者字段刷新 " + names.length + " 位作者；作者单位共 " + inferredAffiliations.length + " 条，数量不一致，未自动分配机构，请逐行确认。");
+            } else if (inferredAffiliations.length === names.length) {
+                updateOwnerAuthorRefreshStatus("已按作者字段刷新 " + names.length + " 位作者，并按作者单位字段自动填入机构。");
+            } else {
+                updateOwnerAuthorRefreshStatus("已按作者字段刷新 " + names.length + " 位作者。");
+            }
+        }
+
+        function updateOwnerAuthorRefreshStatus(message) {
+            var status = document.getElementById("ownerAuthorRefreshStatus");
+            if (status) {
+                status.innerHTML = escapeOwnerAuthorHtml(message);
+            }
+        }
+
+        function readOwnerAuthorDetails() {
+            var rows = document.querySelectorAll("#ownerAuthorEditor .lit-owner-author-row");
+            var details = [];
+            for (var i = 0; i < rows.length; i++) {
+                var nameInput = rows[i].querySelector("[data-owner-author-name]");
+                var affiliationInput = rows[i].querySelector("[data-owner-author-affiliation]");
+                var name = trimOwnerText(nameInput ? nameInput.value : "");
+                if (!name) {
+                    continue;
+                }
+                var affiliations = splitOwnerAffiliations(affiliationInput ? affiliationInput.value : "");
+                var originalName = trimOwnerText(rows[i].getAttribute("data-original-name") || "");
+                var authorId = parseInt(rows[i].getAttribute("data-author-id") || "0", 10) || 0;
+                if (originalName && originalName.toLowerCase() !== name.toLowerCase()) {
+                    authorId = 0;
+                }
+                details.push({
+                    author_id: authorId,
+                    name: name,
+                    name_cn: ownerAuthorHasChinese(name) ? name : "",
+                    name_en: ownerAuthorHasChinese(name) ? "" : name,
+                    affiliations: affiliations,
+                    affiliation_text: affiliations.join("; "),
+                    mapping_status: affiliations.length > 0 ? "matched" : "unmatched"
+                });
+            }
+            return details;
+        }
+
+        function collectOwnerMetadata() {
+            var payload = document.getElementById("owner_author_details");
+            if (payload) {
+                payload.value = JSON.stringify(readOwnerAuthorDetails());
+            }
+            return true;
         }
 
         function closeModalScrollLockIfNoneOpen() {

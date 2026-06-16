@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Model
 {
@@ -18,8 +18,6 @@ namespace Model
         public int? reviewed_by { get; set; }
         public DateTime? review_time { get; set; }
         public string review_remark { get; set; }
-        public int? source_service_log_id { get; set; }
-        public int? source_service_log_info_id { get; set; }
         public DateTime addtime { get; set; }
         public DateTime updatetime { get; set; }
     }

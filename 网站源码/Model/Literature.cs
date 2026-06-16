@@ -14,8 +14,14 @@ namespace Model
         public string source_type { get; set; }
         public string language { get; set; }
         public int? publish_year { get; set; }
+        public int? publish_month { get; set; }
+        public int? publish_day { get; set; }
+        public DateTime? publish_date { get; set; }
+        public string publish_date_precision { get; set; }
         public string journal_name { get; set; }
+        public int? journal_id { get; set; }
         public string conference_name { get; set; }
+        public int? conference_id { get; set; }
         public string publisher { get; set; }
         public string volume { get; set; }
         public string issue { get; set; }

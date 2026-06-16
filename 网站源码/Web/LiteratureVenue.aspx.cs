@@ -137,7 +137,7 @@ namespace Web
 select top 100
     l.id,
     l.title,
-    (select string_agg(a.name_cn,N', ') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
+    (select string_agg(coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N''),N'未命名作者'),N', ') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
     l.publish_year,
     l.source_type,
     l.abstract_text

@@ -38,6 +38,7 @@
         .lit-col-category { width: 120px; }
         .lit-col-year { width: 72px; }
         .lit-col-type { width: 86px; }
+        .lit-col-source { width: 92px; }
         .lit-col-status { width: 86px; }
         .lit-col-stats { width: 150px; }
         .lit-col-time { width: 132px; }
@@ -47,6 +48,10 @@
         .lit-main-authors { margin-top: 6px; color: #4b5563; font-size: 13px; line-height: 1.6; word-break: break-word; }
         .lit-main-mobile-meta { display: none; margin-top: 8px; color: #6b7280; font-size: 12px; }
         .lit-status-pill { display: inline-flex; align-items: center; min-height: 26px; padding: 0 9px; border-radius: 999px; background: #e8f5ee; color: #168449; font-size: 12px; white-space: nowrap; }
+        .lit-source-pill { display: inline-flex; align-items: center; min-height: 26px; padding: 0 9px; border-radius: 999px; background: #eef4fb; color: #1f344d; font-size: 12px; white-space: nowrap; }
+        .lit-source-user { background: #fff4e5; color: #9a5b00; }
+        .lit-source-import { background: #e8f5ee; color: #168449; }
+        .lit-source-admin { background: #eef4fb; color: #1f344d; }
         .lit-row-stats { gap: 4px; align-items: stretch; }
         .lit-actions-inline { display: flex; flex-wrap: wrap; gap: 7px; justify-content: flex-start; }
         .lit-actions-inline a.lit-action-btn { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 8px; background: #eef4fb !important; border: 1px solid #c8d6e5 !important; color: #1f344d !important; font-weight: 500; line-height: 1; }
@@ -54,7 +59,7 @@
         .lit-time { color: #1f2937; line-height: 1.6; white-space: nowrap; }
         @media (max-width: 1200px) {
             .lit-monitor-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .lit-col-category, .lit-col-year, .lit-col-type, .lit-col-status { display: none; }
+            .lit-col-category, .lit-col-year, .lit-col-type, .lit-col-source, .lit-col-status { display: none; }
             .lit-main-mobile-meta { display: block; }
             .lit-col-main { width: 50%; }
         }
@@ -122,6 +127,7 @@
                                         <col class="lit-col-category" />
                                         <col class="lit-col-year" />
                                         <col class="lit-col-type" />
+                                        <col class="lit-col-source" />
                                         <col class="lit-col-status" />
                                         <col class="lit-col-stats" />
                                         <col class="lit-col-time" />
@@ -136,6 +142,7 @@
                                             <th>&#20998;&#31867;</th>
                                             <th>&#24180;&#20221;</th>
                                             <th>&#31867;&#22411;</th>
+                                            <th>&#26469;&#28304;</th>
                                             <th>&#23457;&#26680;&#29366;&#24577;</th>
                                             <th>&#20114;&#21160;</th>
                                             <th>&#19978;&#20256;&#26102;&#38388;</th>
@@ -152,11 +159,12 @@
                                                     <td>
                                                         <div class="lit-main-title"><%# Function.HtmlDiscodeWeb(Eval("title").ToString()) %></div>
                                                         <div class="lit-main-authors"><%# Function.HtmlDiscodeWeb(Eval("author_names").ToString()) %></div>
-                                                        <div class="lit-main-mobile-meta"><%# GetCategoryName(Eval("category_id")) %> · <%# Eval("publish_year") %> · <%# Function.HtmlDiscodeWeb(Eval("source_type").ToString()) %> · <%# GetStatusText(Eval("status")) %></div>
+                                                        <div class="lit-main-mobile-meta"><%# GetCategoryName(Eval("category_id")) %> · <%# Eval("publish_year") %> · <%# Function.HtmlDiscodeWeb(Eval("source_type").ToString()) %> · <%# GetSourceText(Eval("userid"), Eval("import_batch_id")) %> · <%# GetStatusText(Eval("status")) %></div>
                                                     </td>
                                                     <td><%# GetCategoryName(Eval("category_id")) %></td>
                                                 <td><%# Eval("publish_year") %></td>
                                                 <td><%# Function.HtmlDiscodeWeb(Eval("source_type").ToString()) %></td>
+                                                <td><%# GetSourceBadgeHtml(Eval("userid"), Eval("import_batch_id")) %></td>
                                                 <td><span class="lit-status-pill"><%# GetStatusText(Eval("status")) %></span></td>
                                                 <td><%# GetInteractionStatsHtml(Eval("id"), Eval("like_count"), Eval("favorite_count"), Eval("comment_count")) %></td>
                                                     <td><div class="lit-time"><%# Function.ConvertTo<DateTime>(Eval("addtime").ToString(),DateTime.MinValue).ToString("yyyy-MM-dd") %><br /><%# Function.ConvertTo<DateTime>(Eval("addtime").ToString(),DateTime.MinValue).ToString("HH:mm:ss") %></div></td>

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Web
 {
@@ -14,7 +13,6 @@ namespace Web
         private readonly BLLBase<Literature> literatureBll = new BLLBase<Literature>();
         private readonly BLLBase<LiteratureCategory> categoryBll = new BLLBase<LiteratureCategory>();
         private readonly BLLBase<Author> authorBll = new BLLBase<Author>();
-        private readonly BLLBase<indexsingle_list> singleBlockBll = new BLLBase<indexsingle_list>();
 
         public int literatureCount = 0;
         public int categoryCount = 0;
@@ -31,7 +29,6 @@ namespace Web
                 IsLogin = user != null && user.id > 0;
                 BindStatistics();
                 BindFeaturedLiterature();
-                BindRecentLiterature();
             }
             catch (Exception ex)
             {
@@ -124,23 +121,13 @@ order by month_key asc");
             return path.ToString();
         }
 
-        private void BindHomeSingleBlocks()
-        {
-            DataTable dt = singleBlockBll.GetDatatable("select top 5 id,name,info_ from indexsingle_list where isshow=1 order by orderid asc,id asc");
-            if (dt != null && dt.Rows.Count > 0)
-            {
-                HomeSingleBlockList.DataSource = dt.DefaultView;
-                HomeSingleBlockList.DataBind();
-            }
-        }
-
         private void BindFeaturedLiterature()
         {
             DataTable dt = literatureBll.GetDatatable(@"
 select top 3
     l.id,
     l.title,
-    (select string_agg(a.name_cn,N'，') within group (or,l.abstract_textder by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
+    (select string_agg(coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N''),N'未命名作者'),N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
     l.publish_year,
     l.source_type
 from Literature l
@@ -150,26 +137,6 @@ order by l.is_top desc,l.updatetime desc,l.id desc");
             {
                 FeaturedLiteratureList.DataSource = dt.DefaultView;
                 FeaturedLiteratureList.DataBind();
-            }
-        }
-
-        private void BindRecentLiterature()
-        {
-            DataTable dt = literatureBll.GetDatatable(@"
-select top 8
-    l.id,
-    l.title,
-    (select string_agg(a.name_cn,N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
-    l.publish_year,
-    l.source_type,
-    l.abstract_text
-from Literature l
-where l.status=1 and l.canonical_literature_id is null
-order by l.addtime desc,l.id desc");
-            if (dt != null && dt.Rows.Count > 0)
-            {
-                RecentLiteratureList.DataSource = dt.DefaultView;
-                RecentLiteratureList.DataBind();
             }
         }
 
@@ -218,17 +185,5 @@ order by l.addtime desc,l.id desc");
             return parts.Length > 0 ? parts[0].Trim() : author.Trim();
         }
 
-        public string GetSingleBlockSummary(object infoObj)
-        {
-            string text = Function.HtmlDiscode(infoObj == null ? string.Empty : infoObj.ToString());
-            text = Regex.Replace(text, "<.*?>", string.Empty);
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return "\u67E5\u770B\u8BE5\u529F\u80FD\u7684\u8BE6\u7EC6\u8BF4\u660E\u4E0E\u64CD\u4F5C\u5165\u53E3\u3002";
-            }
-
-            text = text.Trim();
-            return text.Length > 64 ? text.Substring(0, 64) + "..." : text;
-        }
     }
 }

@@ -72,9 +72,6 @@ namespace Web.Inc
                             case "DelUserImg":
                                 context.Response.Write(CommonUserFunc.GetDelUserImgFunc(RJson.url));
                                 break;
-                            case "Drawdown":
-                                context.Response.Write(CommonUserFunc.GetDrawdownFunc(RJson.id));
-                                break;
                             case "AppealAdd":
                                 context.Response.Write(CommonUserFunc.GetAppealAddFunc(RJson.url, RJson.info, RJson.ImgArr));
                                 break;

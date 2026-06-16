@@ -1,6 +1,0 @@
-F:\MAIYA3D网站代码\数据库pj完整源码_最终交付版\Model\bin\Debug\Model.dll
-F:\MAIYA3D网站代码\数据库pj完整源码_最终交付版\Model\bin\Debug\Model.pdb
-F:\MAIYA3D网站代码\数据库pj完整源码_最终交付版\Model\obj\Debug\Model.csproj.AssemblyReference.cache
-F:\MAIYA3D网站代码\数据库pj完整源码_最终交付版\Model\obj\Debug\Model.csproj.CoreCompileInputs.cache
-F:\MAIYA3D网站代码\数据库pj完整源码_最终交付版\Model\obj\Debug\Model.dll
-F:\MAIYA3D网站代码\数据库pj完整源码_最终交付版\Model\obj\Debug\Model.pdb

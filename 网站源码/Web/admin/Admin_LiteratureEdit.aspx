@@ -3,6 +3,22 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head id="Head1" runat="server">
+    <style type="text/css">
+        .lit-author-affiliation-editor { display:grid; gap:10px; }
+        .lit-author-affiliation-row { display:grid; grid-template-columns:minmax(160px,220px) minmax(180px,260px) minmax(260px,1fr); gap:10px; align-items:start; }
+        .lit-author-affiliation-row input,
+        .lit-author-affiliation-row textarea { width:100%; border:1px solid #d7e0ea; border-radius:8px; padding:8px 10px; box-sizing:border-box; }
+        .lit-author-affiliation-row textarea { min-height:42px; resize:vertical; }
+        .lit-author-affiliation-tools { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+        .lit-author-affiliation-hint { color:#6b7280; font-size:13px; line-height:1.7; margin-top:8px; }
+        .lit-master-row { display:flex; gap:8px; align-items:center; }
+        .lit-master-row .txt { flex:1; min-width:0; }
+        .lit-master-row a { white-space:nowrap; }
+        @media (max-width:760px) {
+            .lit-author-affiliation-row { grid-template-columns:1fr; }
+            .lit-master-row { align-items:stretch; flex-direction:column; }
+        }
+    </style>
 </head>
 <body>
     <%@ Register TagPrefix="LiteratureManager" TagName="Inc" Src="Inc.ascx" %>
@@ -12,6 +28,12 @@
     <LiteratureManager:class_menu ID="class_menu" runat="server" />
 
     <form id="form2" runat="server">
+        <asp:HiddenField ID="author_details_payload" runat="server" />
+        <asp:HiddenField ID="journal_id_payload" runat="server" />
+        <asp:HiddenField ID="conference_id_payload" runat="server" />
+        <datalist id="institutionMasterList"><%=InstitutionDatalistHtml %></datalist>
+        <datalist id="journalMasterList"><%=JournalDatalistHtml %></datalist>
+        <datalist id="conferenceMasterList"><%=ConferenceDatalistHtml %></datalist>
         <div class="app-content">
             <asp:Panel ID="AddUp" runat="server">
                 <div class="container-fluid">
@@ -49,6 +71,14 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
+                                    <label class="form-label">论文作者机构归属</label>
+                                    <div class="lit-author-affiliation-tools">
+                                        <button type="button" class="btn btn-secondary" onclick="renderAdminAuthorDetailsFromNames()">根据作者姓名生成/刷新作者行</button>
+                                    </div>
+                                    <div id="authorAffiliationEditor" class="lit-author-affiliation-editor"><%=AuthorAffiliationEditorHtml %></div>
+                                    <div class="lit-author-affiliation-hint">这里维护的是“当前这篇论文中每位作者对应的机构”。中间输入框只是从机构库快捷追加，右侧机构框可以直接输入新机构；保存后会同步到作者管理页的论文机构记录，不会覆盖该作者在其他论文中的机构。</div>
+                                </div>
+                                <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <label class="form-label">DOI</label>
@@ -61,10 +91,21 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <div class="mb-6">
-                                        <label class="form-label">&#21457;&#34920;&#24180;&#20221;</label>
-                                        <asp:TextBox ID="publish_year" runat="server" CssClass="txt form-control"></asp:TextBox>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">发表年份</label>
+                                            <asp:TextBox ID="publish_year" runat="server" CssClass="txt form-control"></asp:TextBox>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">发表月份</label>
+                                            <asp:TextBox ID="publish_month" runat="server" CssClass="txt form-control"></asp:TextBox>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">发表日期</label>
+                                            <asp:TextBox ID="publish_day" runat="server" CssClass="txt form-control"></asp:TextBox>
+                                        </div>
                                     </div>
+                                    <div class="lit-author-affiliation-hint">如果原文只有年份，可只填年份；如果能确认月份或日期，请一并填写，用于作者当前机构和论文排序。</div>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
@@ -90,11 +131,19 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <label class="form-label">&#26399;&#21002;&#21517;&#31216;</label>
-                                            <asp:TextBox ID="journal_name" runat="server" CssClass="txt form-control"></asp:TextBox>
+                                            <div class="lit-master-row">
+                                                <asp:TextBox ID="journal_name" runat="server" CssClass="txt form-control"></asp:TextBox>
+                                                <a class="btn btn-secondary" href="Admin_JournalList.aspx?MenuId=1732" target="_blank">&#26399;&#21002;&#24211;</a>
+                                            </div>
+                                            <div class="lit-author-affiliation-hint">&#21487;&#30452;&#25509;&#36755;&#20837;&#65292;&#20063;&#21487;&#20174;&#26399;&#21002;&#24211;&#20505;&#36873;&#20013;&#36873;&#25321;&#12290;</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">&#20250;&#35758;&#21517;&#31216;</label>
-                                            <asp:TextBox ID="conference_name" runat="server" CssClass="txt form-control"></asp:TextBox>
+                                            <div class="lit-master-row">
+                                                <asp:TextBox ID="conference_name" runat="server" CssClass="txt form-control"></asp:TextBox>
+                                                <a class="btn btn-secondary" href="Admin_ConferenceList.aspx?MenuId=1733" target="_blank">&#20250;&#35758;&#24211;</a>
+                                            </div>
+                                            <div class="lit-author-affiliation-hint">&#21487;&#30452;&#25509;&#36755;&#20837;&#65292;&#20063;&#21487;&#20174;&#20250;&#35758;&#24211;&#20505;&#36873;&#20013;&#36873;&#25321;&#12290;</div>
                                         </div>
                                     </div>
                                 </div>
@@ -202,7 +251,7 @@
                                     </div>
                                 </div>
                                 <div class="card-footer">
-                                    <asp:Button ID="Button3" Text=" &#20445; &#23384; " CssClass="btn btn-primary" runat="server" OnClick="OnClick_AddUp" />
+                                    <asp:Button ID="Button3" Text=" &#20445; &#23384; " CssClass="btn btn-primary" runat="server" OnClientClick="return collectAdminAuthorDetails();" OnClick="OnClick_AddUp" />
                                     <input type="button" name="button" id="button" value=" &#36820; &#22238; " class="btn submit-but" onclick="history.go(-1)" />
                                 </div>
                             </div>
@@ -213,6 +262,273 @@
         </div>
     </form>
     <script type="text/javascript">
+        var adminInstitutionOptions = <%=InstitutionOptionsJson %>;
+        var adminJournalOptions = <%=JournalOptionsJson %>;
+        var adminConferenceOptions = <%=ConferenceOptionsJson %>;
+
+        function normalizeMasterOptionName(value) {
+            return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+        }
+
+        function findMasterOption(options, value) {
+            var key = normalizeMasterOptionName(value);
+            if (!key || !options) return null;
+            for (var i = 0; i < options.length; i++) {
+                if (normalizeMasterOptionName(options[i].name) === key) {
+                    return options[i];
+                }
+            }
+            return null;
+        }
+
+        function syncJournalMasterSelection() {
+            var input = document.getElementById("<%= journal_name.ClientID %>");
+            var hidden = document.getElementById("<%= journal_id_payload.ClientID %>");
+            if (!input || !hidden) return;
+            var item = findMasterOption(adminJournalOptions, input.value);
+            hidden.value = item ? item.id : "";
+        }
+
+        function syncConferenceMasterSelection() {
+            var input = document.getElementById("<%= conference_name.ClientID %>");
+            var hidden = document.getElementById("<%= conference_id_payload.ClientID %>");
+            if (!input || !hidden) return;
+            var item = findMasterOption(adminConferenceOptions, input.value);
+            hidden.value = item ? item.id : "";
+        }
+
+        function appendAuthorInstitutionFromPicker(picker) {
+            if (!picker) return;
+            var row = picker.closest ? picker.closest(".lit-author-affiliation-row") : null;
+            if (!row) return;
+            var value = picker.value.replace(/\s+/g, " ").trim();
+            if (!value) return;
+            var option = findMasterOption(adminInstitutionOptions, value);
+            if (option && option.name) {
+                value = option.name;
+            }
+            var textarea = row.querySelector("[data-author-affiliation]");
+            if (!textarea) return;
+            var existing = splitAdminAffiliations(textarea.value);
+            var exists = false;
+            for (var i = 0; i < existing.length; i++) {
+                if (normalizeMasterOptionName(existing[i]) === normalizeMasterOptionName(value)) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                existing.push(value);
+                textarea.value = existing.join("; ");
+            }
+        }
+
+        function bindAuthorInstitutionPickers() {
+            var editor = document.getElementById("authorAffiliationEditor");
+            if (!editor) return;
+            var pickers = editor.querySelectorAll("[data-author-affiliation-picker]");
+            for (var i = 0; i < pickers.length; i++) {
+                if (pickers[i].getAttribute("data-bound") === "1") continue;
+                pickers[i].setAttribute("data-bound", "1");
+                pickers[i].onchange = function () {
+                    appendAuthorInstitutionFromPicker(this);
+                };
+            }
+        }
+
+        function escapeAdminAuthorHtml(value) {
+            return String(value || "").replace(/[&<>"']/g, function (ch) {
+                return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[ch];
+            });
+        }
+
+        function containsAdminChinese(value) {
+            return /[\u3400-\u9fff\uf900-\ufaff]/.test(value || "");
+        }
+
+        function splitAdminAffiliations(value) {
+            var parts = String(value || "").split(/[;；|\n\r]+/);
+            var result = [];
+            for (var i = 0; i < parts.length; i++) {
+                var current = parts[i].replace(/\s+/g, " ").trim();
+                if (current && result.indexOf(current) < 0) {
+                    result.push(current);
+                }
+            }
+            return result;
+        }
+
+        function splitAdminAuthorNames(value) {
+            var parts = String(value || "").split(/[,，;；、|]+/);
+            var result = [];
+            for (var i = 0; i < parts.length; i++) {
+                var current = parts[i].replace(/\s+/g, " ").trim();
+                if (current && result.indexOf(current) < 0) {
+                    result.push(current);
+                }
+            }
+            return result;
+        }
+
+        function normalizeAdminAuthorDetails(details) {
+            var result = [];
+            if (!details || !details.length) return result;
+            for (var i = 0; i < details.length; i++) {
+                var item = details[i];
+                var name = "";
+                var affiliations = [];
+                if (typeof item === "string") {
+                    name = item;
+                } else if (item) {
+                    name = item.name || item.name_cn || item.name_en || "";
+                    if (item.affiliations && item.affiliations.length) {
+                        for (var j = 0; j < item.affiliations.length; j++) {
+                            var aff = String(item.affiliations[j] || "").replace(/\s+/g, " ").trim();
+                            if (aff && affiliations.indexOf(aff) < 0) affiliations.push(aff);
+                        }
+                    }
+                    if (affiliations.length === 0 && item.affiliation_text) {
+                        affiliations = splitAdminAffiliations(item.affiliation_text);
+                    }
+                }
+                name = String(name || "").replace(/\s+/g, " ").trim();
+                if (!name) continue;
+                result.push({
+                    author_id: item.author_id || 0,
+                    name: name,
+                    name_cn: containsAdminChinese(name) ? name : "",
+                    name_en: containsAdminChinese(name) ? "" : name,
+                    affiliations: affiliations,
+                    affiliation_text: affiliations.join("; "),
+                    mapping_status: affiliations.length ? "matched" : "unmatched"
+                });
+            }
+            return result;
+        }
+
+        function renderAdminAuthorDetails(details) {
+            var editor = document.getElementById("authorAffiliationEditor");
+            if (!editor) return;
+            var normalized = normalizeAdminAuthorDetails(details);
+            editor.innerHTML = "";
+            if (!normalized.length) {
+                editor.innerHTML = "<div class=\"lit-author-affiliation-hint\">暂无作者机构归属，请先填写作者或解析 PDF。</div>";
+                setAdminAuthorDetailsPayload([]);
+                return;
+            }
+            for (var i = 0; i < normalized.length; i++) {
+                var row = document.createElement("div");
+                row.className = "lit-author-affiliation-row";
+                row.setAttribute("data-author-id", normalized[i].author_id || 0);
+                row.innerHTML =
+                    "<input type=\"text\" data-author-name=\"1\" value=\"" + escapeAdminAuthorHtml(normalized[i].name) + "\" placeholder=\"作者姓名\" />" +
+                    "<input type=\"text\" data-author-affiliation-picker=\"1\" list=\"institutionMasterList\" placeholder=\"从机构库选择（可选）\" />" +
+                    "<textarea data-author-affiliation=\"1\" placeholder=\"可直接输入该作者在本文中的机构；多个机构用分号分隔\">" + escapeAdminAuthorHtml(normalized[i].affiliation_text || "") + "</textarea>";
+                editor.appendChild(row);
+            }
+            bindAuthorInstitutionPickers();
+            setAdminAuthorDetailsPayload(normalized);
+        }
+
+        function setAdminAuthorDetailsPayload(details) {
+            var input = document.getElementById("<%= author_details_payload.ClientID %>");
+            if (!input) return;
+            try {
+                input.value = details && details.length ? JSON.stringify(details) : "";
+            } catch (e) {
+                input.value = "";
+            }
+        }
+
+        function readAdminAuthorDetailsFromEditor() {
+            var editor = document.getElementById("authorAffiliationEditor");
+            var details = [];
+            if (!editor) return details;
+            var rows = editor.querySelectorAll(".lit-author-affiliation-row");
+            for (var i = 0; i < rows.length; i++) {
+                var nameEl = rows[i].querySelector("[data-author-name]");
+                var affEl = rows[i].querySelector("[data-author-affiliation]");
+                var name = nameEl ? nameEl.value.replace(/\s+/g, " ").trim() : "";
+                if (!name) continue;
+                var affiliations = splitAdminAffiliations(affEl ? affEl.value : "");
+                details.push({
+                    author_id: parseInt(rows[i].getAttribute("data-author-id") || "0", 10) || 0,
+                    name: name,
+                    name_cn: containsAdminChinese(name) ? name : "",
+                    name_en: containsAdminChinese(name) ? "" : name,
+                    affiliations: affiliations,
+                    affiliation_text: affiliations.join("; "),
+                    mapping_status: affiliations.length ? "matched" : "unmatched"
+                });
+            }
+            return details;
+        }
+
+        function collectAdminAuthorDetails() {
+            var editor = document.getElementById("authorAffiliationEditor");
+            if (!editor) return true;
+            var details = readAdminAuthorDetailsFromEditor();
+            if (!details.length) {
+                var authorInput = document.getElementById("<%= author_names.ClientID %>");
+                var names = splitAdminAuthorNames(authorInput ? authorInput.value : "");
+                for (var j = 0; j < names.length; j++) {
+                    details.push({
+                        name: names[j],
+                        name_cn: containsAdminChinese(names[j]) ? names[j] : "",
+                        name_en: containsAdminChinese(names[j]) ? "" : names[j],
+                        affiliations: [],
+                        affiliation_text: "",
+                        mapping_status: "unmatched"
+                    });
+                }
+            }
+            var authorNamesInput = document.getElementById("<%= author_names.ClientID %>");
+            if (authorNamesInput && details.length) {
+                var namesForSubmit = [];
+                for (var n = 0; n < details.length; n++) {
+                    if (details[n].name) namesForSubmit.push(details[n].name);
+                }
+                authorNamesInput.value = namesForSubmit.join(", ");
+            }
+            setAdminAuthorDetailsPayload(details);
+            return true;
+        }
+
+        function renderAdminAuthorDetailsFromNames() {
+            var authorInput = document.getElementById("<%= author_names.ClientID %>");
+            var institutionInput = document.getElementById("<%= institution.ClientID %>");
+            var names = splitAdminAuthorNames(authorInput ? authorInput.value : "");
+            var defaultInstitution = institutionInput ? institutionInput.value.replace(/\s+/g, " ").trim() : "";
+            var currentDetails = normalizeAdminAuthorDetails(readAdminAuthorDetailsFromEditor());
+            var currentMap = {};
+            for (var j = 0; j < currentDetails.length; j++) {
+                currentMap[currentDetails[j].name.toLowerCase()] = currentDetails[j];
+            }
+            var details = [];
+            for (var i = 0; i < names.length; i++) {
+                var current = currentMap[names[i].toLowerCase()];
+                var affiliations = current ? current.affiliations : [];
+                if (!current && names.length === 1 && defaultInstitution) {
+                    affiliations = splitAdminAffiliations(defaultInstitution);
+                }
+                details.push({
+                    author_id: current ? (current.author_id || 0) : 0,
+                    name: names[i],
+                    affiliations: affiliations,
+                    affiliation_text: affiliations.join("; ")
+                });
+            }
+            renderAdminAuthorDetails(details);
+            var editor = document.getElementById("authorAffiliationEditor");
+            if (editor && names.length > 1) {
+                var hint = document.createElement("div");
+                hint.className = "lit-author-affiliation-hint";
+                hint.innerHTML = "已根据作者姓名生成作者行。多作者论文不会自动套用整篇机构字段，请逐一确认机构归属。";
+                editor.insertBefore(hint, editor.firstChild);
+            }
+            return false;
+        }
+
         (function () {
             function setStatus(text, color) {
                 var el = document.getElementById("pdf_parse_status");
@@ -273,11 +589,17 @@
                     setValue("<%= institution.ClientID %>", data.institution);
                     setValue("<%= doi.ClientID %>", data.doi);
                     setValue("<%= publish_year.ClientID %>", data.publish_year);
+                    setValue("<%= publish_month.ClientID %>", data.publish_month);
+                    setValue("<%= publish_day.ClientID %>", data.publish_day);
                     setValue("<%= journal_name.ClientID %>", data.journal_name);
                     setValue("<%= conference_name.ClientID %>", data.conference_name);
+                    syncJournalMasterSelection();
+                    syncConferenceMasterSelection();
                     setValue("<%= keywords.ClientID %>", data.keywords);
                     setValue("<%= abstract_text.ClientID %>", data.abstract_text);
                     setValue("<%= source_type.ClientID %>", data.source_type);
+                    setAdminAuthorDetailsPayload(data.author_details || data.authors || []);
+                    renderAdminAuthorDetails(data.author_details || data.authors || []);
                     if (data.source_type) {
                         var sourceEl = document.getElementById("<%= source_type.ClientID %>");
                         if (sourceEl) {
@@ -298,6 +620,22 @@
                 xhr.send(formData);
                 return false;
             };
+        })();
+
+        (function () {
+            var journalInput = document.getElementById("<%= journal_name.ClientID %>");
+            if (journalInput) {
+                journalInput.oninput = syncJournalMasterSelection;
+                journalInput.onchange = syncJournalMasterSelection;
+            }
+            var conferenceInput = document.getElementById("<%= conference_name.ClientID %>");
+            if (conferenceInput) {
+                conferenceInput.oninput = syncConferenceMasterSelection;
+                conferenceInput.onchange = syncConferenceMasterSelection;
+            }
+            bindAuthorInstitutionPickers();
+            syncJournalMasterSelection();
+            syncConferenceMasterSelection();
         })();
     </script>
     <% } %>

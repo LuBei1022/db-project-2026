@@ -4,7 +4,7 @@
     <ul>
         <li  class="<%=GetClassHtml("Account") %>"><a href="/User/Account">账号信息</a></li>
         <li class="<%=GetClassHtml("ServiceLog,ServiceLog_,ServiceLogInfo,ServiceLogAdd") %>"><a href="/User/ServiceLog">问题反馈</a></li>
-        <li class="<%=GetClassHtml("IntegrateExchange,IntegrateWithdrawal,IntegrateLog,IntegrateExchangeLog") %>"><a href="/User/IntegrateExchange">我的积分</a></li>
+        <li class="<%=GetClassHtml("IntegrateExchange,IntegrateLog,IntegrateExchangeLog") %>"><a href="/User/IntegrateExchange">我的积分</a></li>
         <li class="<%=GetClassHtml("NoticeLog,MsgLog") %>"><a href="/User/NoticeLog">通知消息</a></li>
     </ul>
 </div>

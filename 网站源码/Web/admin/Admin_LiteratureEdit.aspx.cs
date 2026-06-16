@@ -2,9 +2,12 @@
 using BLL;
 using Model;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web.Script.Serialization;
 
 namespace Web.admin
 {
@@ -13,6 +16,8 @@ namespace Web.admin
         private readonly BLLBase<Literature> literatureBll = new BLLBase<Literature>();
         private readonly BLLBase<LiteratureCategory> categoryBll = new BLLBase<LiteratureCategory>();
         private readonly BLLBase<LiteratureTag> tagBll = new BLLBase<LiteratureTag>();
+        private readonly BLLBase<Journal> journalBll = new BLLBase<Journal>();
+        private readonly BLLBase<Conference> conferenceBll = new BLLBase<Conference>();
         private readonly BLLBase<NoticeLog_List> noticeLogBll = new BLLBase<NoticeLog_List>();
         private readonly string Action = Function.GetRequest("Action");
         private const string DuplicateSubmissionRemarkPrefix = "[重复投稿]关联文献ID:";
@@ -20,11 +25,20 @@ namespace Web.admin
         public int MenuId = Function.ConvertTo<int>(Function.GetRequest("MenuId"), 0);
         public bool isLoading = false;
         public string duplicateMasterNoticeHtml = string.Empty;
+        public string AuthorAffiliationEditorHtml = string.Empty;
+        public string InstitutionDatalistHtml = string.Empty;
+        public string JournalDatalistHtml = string.Empty;
+        public string ConferenceDatalistHtml = string.Empty;
+        public string InstitutionOptionsJson = "[]";
+        public string JournalOptionsJson = "[]";
+        public string ConferenceOptionsJson = "[]";
 
         protected void Page_Load(object sender, EventArgs e)
         {
             Function.Check_AdminLogin();
             isLoading = true;
+            LoadMasterDataOptions();
+            ConfigureMasterDataControls();
             if (!IsPostBack)
             {
                 BindCategoryDropDown();
@@ -67,6 +81,119 @@ namespace Web.admin
             }
         }
 
+        private void ConfigureMasterDataControls()
+        {
+            journal_name.Attributes["list"] = "journalMasterList";
+            journal_name.Attributes["oninput"] = "syncJournalMasterSelection()";
+            journal_name.Attributes["onchange"] = "syncJournalMasterSelection()";
+            conference_name.Attributes["list"] = "conferenceMasterList";
+            conference_name.Attributes["oninput"] = "syncConferenceMasterSelection()";
+            conference_name.Attributes["onchange"] = "syncConferenceMasterSelection()";
+        }
+
+        private void LoadMasterDataOptions()
+        {
+            List<MasterOption> institutions = LoadInstitutionOptions();
+            List<MasterOption> journals = LoadNamedOptions("Journal", "name_cn", "name_en", "status=1");
+            List<MasterOption> conferences = LoadNamedOptions("Conference", "name_cn", "name_en", "status=1", "acronym");
+
+            InstitutionDatalistHtml = BuildDatalistHtml(institutions);
+            JournalDatalistHtml = BuildDatalistHtml(journals);
+            ConferenceDatalistHtml = BuildDatalistHtml(conferences);
+            InstitutionOptionsJson = BuildOptionsJson(institutions);
+            JournalOptionsJson = BuildOptionsJson(journals);
+            ConferenceOptionsJson = BuildOptionsJson(conferences);
+        }
+
+        private List<MasterOption> LoadInstitutionOptions()
+        {
+            List<MasterOption> result = new List<MasterOption>();
+            try
+            {
+                DataTable dt = literatureBll.GetDatatable("select top 500 id,name_cn,name_en,alias_names from Institution where status=1 order by updatetime desc,id desc");
+                if (dt != null)
+                {
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        int id = Function.ConvertTo<int>(Convert.ToString(row["id"]), 0);
+                        AddMasterOption(result, id, Function.HtmlDiscode(Convert.ToString(row["name_cn"])));
+                        AddMasterOption(result, id, Function.HtmlDiscode(Convert.ToString(row["name_en"])));
+                        foreach (string alias in SplitMasterNames(Function.HtmlDiscode(Convert.ToString(row["alias_names"]))))
+                        {
+                            AddMasterOption(result, id, alias);
+                        }
+                    }
+                    dt.Dispose();
+                }
+            }
+            catch
+            {
+            }
+            return result;
+        }
+
+        private List<MasterOption> LoadNamedOptions(string tableName, string cnColumn, string enColumn, string where, string extraColumn = "")
+        {
+            List<MasterOption> result = new List<MasterOption>();
+            try
+            {
+                string fields = "id," + cnColumn + "," + enColumn + (string.IsNullOrWhiteSpace(extraColumn) ? "" : "," + extraColumn);
+                DataTable dt = literatureBll.GetDatatable("select top 500 " + fields + " from " + tableName + " where " + where + " order by updatetime desc,id desc");
+                if (dt != null)
+                {
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        int id = Function.ConvertTo<int>(Convert.ToString(row["id"]), 0);
+                        AddMasterOption(result, id, Function.HtmlDiscode(Convert.ToString(row[cnColumn])));
+                        AddMasterOption(result, id, Function.HtmlDiscode(Convert.ToString(row[enColumn])));
+                        if (!string.IsNullOrWhiteSpace(extraColumn))
+                        {
+                            AddMasterOption(result, id, Function.HtmlDiscode(Convert.ToString(row[extraColumn])));
+                        }
+                    }
+                    dt.Dispose();
+                }
+            }
+            catch
+            {
+            }
+            return result;
+        }
+
+        private void AddMasterOption(List<MasterOption> options, int id, string name)
+        {
+            string clean = NormalizePlainText(name);
+            if (id <= 0 || string.IsNullOrWhiteSpace(clean))
+            {
+                return;
+            }
+            string key = NormalizeMasterName(clean);
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (NormalizeMasterName(options[i].name) == key)
+                {
+                    return;
+                }
+            }
+            options.Add(new MasterOption { id = id, name = clean });
+        }
+
+        private string BuildDatalistHtml(List<MasterOption> options)
+        {
+            StringBuilder html = new StringBuilder();
+            foreach (MasterOption option in options)
+            {
+                html.Append("<option value=\"").Append(Server.HtmlEncode(option.name)).Append("\"></option>");
+            }
+            return html.ToString();
+        }
+
+        private string BuildOptionsJson(List<MasterOption> options)
+        {
+            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            return serializer.Serialize(options).Replace("<", "\\u003c").Replace(">", "\\u003e").Replace("&", "\\u0026");
+        }
+
         protected void EditFunc()
         {
             Txt_Title.Text = "\u7F16\u8F91\u6587\u732E";
@@ -83,13 +210,19 @@ namespace Web.admin
             subtitle.Text = Function.HtmlDiscode(literature.subtitle);
             author_names.Text = LiteratureRelationSync.GetAuthorNames(literature.id);
             institution.Text = Function.HtmlDiscode(literature.institution);
+            AuthorAffiliationEditorHtml = BuildAuthorAffiliationEditorHtml(literature.id);
+            author_details_payload.Value = BuildAuthorDetailsJson(literature.id);
             doi.Text = Function.HtmlDiscode(literature.doi);
             download_points.Text = literature.download_points.ToString();
             publish_year.Text = literature.publish_year.HasValue ? literature.publish_year.Value.ToString() : string.Empty;
+            publish_month.Text = literature.publish_month.HasValue ? literature.publish_month.Value.ToString() : string.Empty;
+            publish_day.Text = literature.publish_day.HasValue ? literature.publish_day.Value.ToString() : string.Empty;
             SetDropDownValue(source_type, literature.source_type, "\u5176\u4ED6");
             SetDropDownValue(category_id, literature.category_id.ToString(), "0");
             journal_name.Text = Function.HtmlDiscode(literature.journal_name);
+            journal_id_payload.Value = literature.journal_id.HasValue ? literature.journal_id.Value.ToString() : string.Empty;
             conference_name.Text = Function.HtmlDiscode(literature.conference_name);
+            conference_id_payload.Value = literature.conference_id.HasValue ? literature.conference_id.Value.ToString() : string.Empty;
             volume.Text = Function.HtmlDiscode(literature.volume);
             issue.Text = Function.HtmlDiscode(literature.issue);
             pages.Text = Function.HtmlDiscode(literature.pages);
@@ -173,13 +306,16 @@ namespace Web.admin
             literature.abstract_text = Function.HtmlEncode(abstract_text.Text.Trim());
             literature.source_type = Function.HtmlEncode(source_type.SelectedValue);
             literature.language = Function.HtmlEncode(language.Text.Trim());
-            literature.publish_year = Function.ConvertTo<int>(publish_year.Text.Trim(), 0);
-            if (literature.publish_year <= 0)
+            string publishDateError = ApplyPublicationDate(literature, publish_year.Text, publish_month.Text, publish_day.Text);
+            if (!string.IsNullOrWhiteSpace(publishDateError))
             {
-                literature.publish_year = null;
+                Function.Ok_Return(Cookie.GetCookie("LMS_AdminName"), publishDateError, backUrl, 2);
+                return;
             }
             literature.journal_name = Function.HtmlEncode(journal_name.Text.Trim());
+            literature.journal_id = ResolveJournalId(journal_name.Text.Trim(), journal_id_payload.Value);
             literature.conference_name = Function.HtmlEncode(conference_name.Text.Trim());
+            literature.conference_id = ResolveConferenceId(conference_name.Text.Trim(), conference_id_payload.Value);
             literature.publisher = Function.HtmlEncode(publisher.Text.Trim());
             literature.volume = Function.HtmlEncode(volume.Text.Trim());
             literature.issue = Function.HtmlEncode(issue.Text.Trim());
@@ -245,7 +381,7 @@ namespace Web.admin
 
             if (success)
             {
-                LiteratureRelationSync.Sync(literature, submittedAuthorNames, submittedTagNames, submittedPdfFile, submittedPdfName);
+                LiteratureRelationSync.Sync(literature, submittedAuthorNames, submittedTagNames, submittedPdfFile, submittedPdfName, author_details_payload.Value);
                 if (literature.status == 1)
                 {
                     LiteratureVenueProfileSync.EnsureForLiterature(literature);
@@ -283,6 +419,293 @@ namespace Web.admin
             notice.name = Function.HtmlEncode("[文献管理] 文献信息已更新");
             notice.info_ = Function.HtmlEncode("管理员更新了您的文献《" + Function.HtmlDiscode(literature.title) + "》的元数据或附件信息，请进入详情页查看。");
             noticeLogBll.Add(notice, "id");
+        }
+
+        private string ApplyPublicationDate(Literature literature, string yearText, string monthText, string dayText)
+        {
+            int year = Function.ConvertTo<int>((yearText ?? string.Empty).Trim(), 0);
+            int month = Function.ConvertTo<int>((monthText ?? string.Empty).Trim(), 0);
+            int day = Function.ConvertTo<int>((dayText ?? string.Empty).Trim(), 0);
+
+            if (year <= 0)
+            {
+                if (month > 0 || day > 0)
+                {
+                    return "填写发表月份或日期时必须同时填写发表年份。";
+                }
+                literature.publish_year = null;
+                literature.publish_month = null;
+                literature.publish_day = null;
+                literature.publish_date = null;
+                literature.publish_date_precision = "unknown";
+                return string.Empty;
+            }
+
+            if (year < 1000 || year > 9999)
+            {
+                return "发表年份格式不正确。";
+            }
+            if (month < 0 || month > 12)
+            {
+                return "发表月份必须在 1-12 之间。";
+            }
+            if (month == 0 && day > 0)
+            {
+                return "填写发表日期时必须同时填写发表月份。";
+            }
+            if (day < 0 || day > 31)
+            {
+                return "发表日期格式不正确。";
+            }
+
+            literature.publish_year = year;
+            literature.publish_month = month > 0 ? (int?)month : null;
+            literature.publish_day = null;
+            literature.publish_date_precision = "year";
+            literature.publish_date = new DateTime(year, 12, 31);
+
+            if (month > 0)
+            {
+                int maxDay = DateTime.DaysInMonth(year, month);
+                if (day > maxDay)
+                {
+                    return "发表日期超过该月份最大天数。";
+                }
+                literature.publish_date_precision = "month";
+                literature.publish_date = new DateTime(year, month, maxDay);
+                if (day > 0)
+                {
+                    literature.publish_day = day;
+                    literature.publish_date_precision = "day";
+                    literature.publish_date = new DateTime(year, month, day);
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private string BuildAuthorAffiliationEditorHtml(int literatureId)
+        {
+            DataTable dt = literatureBll.GetDatatable(@"
+select
+    m.author_id,
+    coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N'')) as author_name,
+    m.affiliation_text,
+    (
+        select string_agg(coalesce(nullif(i.name_cn,N''),nullif(i.name_en,N''),nullif(aim.affiliation_text,N'')),N'；') within group (order by aim.institution_order, aim.id)
+        from LiteratureAuthorInstitutionMap aim
+        left join Institution i on i.id=aim.institution_id and i.status<>-1
+        where aim.literature_author_map_id=m.id
+           or (isnull(aim.literature_author_map_id,0)=0 and aim.literature_id=m.literature_id and aim.author_id=m.author_id)
+    ) as institution_names
+from LiteratureAuthorMap m
+inner join Author a on a.id=m.author_id
+where m.literature_id=" + literatureId + @"
+order by m.author_order asc,m.id asc");
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                return "<div class=\"lit-author-affiliation-hint\">暂无作者机构归属，请先填写作者或解析 PDF。</div>";
+            }
+
+            StringBuilder html = new StringBuilder();
+            foreach (DataRow row in dt.Rows)
+            {
+                string name = Function.HtmlDiscode(Convert.ToString(row["author_name"]));
+                string affiliation = Function.HtmlDiscode(Convert.ToString(row["institution_names"]));
+                if (string.IsNullOrWhiteSpace(affiliation))
+                {
+                    affiliation = Function.HtmlDiscode(Convert.ToString(row["affiliation_text"]));
+                }
+                html.Append("<div class=\"lit-author-affiliation-row\" data-author-id=\"");
+                html.Append(Function.ConvertTo<int>(Convert.ToString(row["author_id"]), 0));
+                html.Append("\"><input type=\"text\" data-author-name=\"1\" value=\"");
+                html.Append(Server.HtmlEncode(name));
+                html.Append("\" placeholder=\"作者姓名\" /><input type=\"text\" data-author-affiliation-picker=\"1\" list=\"institutionMasterList\" placeholder=\"从机构库选择（可选）\" /><textarea data-author-affiliation=\"1\" placeholder=\"可直接输入该作者在本文中的机构；多个机构用分号分隔\">");
+                html.Append(Server.HtmlEncode(affiliation));
+                html.Append("</textarea></div>");
+            }
+            dt.Dispose();
+            return html.ToString();
+        }
+
+        private string BuildAuthorDetailsJson(int literatureId)
+        {
+            DataTable dt = literatureBll.GetDatatable(@"
+select
+    m.author_id,
+    coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N'')) as author_name,
+    a.name_cn,
+    a.name_en,
+    m.affiliation_text,
+    (
+        select string_agg(coalesce(nullif(i.name_cn,N''),nullif(i.name_en,N''),nullif(aim.affiliation_text,N'')),N'；') within group (order by aim.institution_order, aim.id)
+        from LiteratureAuthorInstitutionMap aim
+        left join Institution i on i.id=aim.institution_id and i.status<>-1
+        where aim.literature_author_map_id=m.id
+           or (isnull(aim.literature_author_map_id,0)=0 and aim.literature_id=m.literature_id and aim.author_id=m.author_id)
+    ) as institution_names
+from LiteratureAuthorMap m
+inner join Author a on a.id=m.author_id
+where m.literature_id=" + literatureId + @"
+order by m.author_order asc,m.id asc");
+            List<Dictionary<string, object>> details = new List<Dictionary<string, object>>();
+            if (dt != null)
+            {
+                foreach (DataRow row in dt.Rows)
+                {
+                    string name = Function.HtmlDiscode(Convert.ToString(row["author_name"]));
+                    string affiliationText = Function.HtmlDiscode(Convert.ToString(row["institution_names"]));
+                    if (string.IsNullOrWhiteSpace(affiliationText))
+                    {
+                        affiliationText = Function.HtmlDiscode(Convert.ToString(row["affiliation_text"]));
+                    }
+                    List<string> affiliations = SplitAffiliations(affiliationText);
+                    Dictionary<string, object> item = new Dictionary<string, object>();
+                    item["author_id"] = Function.ConvertTo<int>(Convert.ToString(row["author_id"]), 0);
+                    item["name"] = name;
+                    item["name_cn"] = Function.HtmlDiscode(Convert.ToString(row["name_cn"]));
+                    item["name_en"] = Function.HtmlDiscode(Convert.ToString(row["name_en"]));
+                    item["affiliations"] = affiliations;
+                    item["affiliation_text"] = string.Join("; ", affiliations.ToArray());
+                    item["mapping_status"] = affiliations.Count > 0 ? "matched" : "unmatched";
+                    details.Add(item);
+                }
+                dt.Dispose();
+            }
+
+            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            return serializer.Serialize(details);
+        }
+
+        private List<string> SplitAffiliations(string value)
+        {
+            List<string> values = new List<string>();
+            foreach (string part in (value ?? string.Empty).Split(new[] { ';', '\uFF1B', '|', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string current = part.Trim();
+                if (!string.IsNullOrWhiteSpace(current) && !values.Contains(current))
+                {
+                    values.Add(current);
+                }
+            }
+            return values;
+        }
+
+        private int? ResolveJournalId(string journalName, string submittedId)
+        {
+            string cleanName = NormalizePlainText(journalName);
+            if (string.IsNullOrWhiteSpace(cleanName))
+            {
+                return null;
+            }
+
+            int selectedId = Function.ConvertTo<int>(submittedId, 0);
+            Journal selected = selectedId > 0 ? journalBll.SelectSingle("id=" + selectedId + " and status<>-1") : null;
+            if (selected != null && selected.id > 0)
+            {
+                return selected.id;
+            }
+
+            string normalized = NormalizeMasterName(cleanName);
+            Journal exists = journalBll.SelectSingle("status<>-1 and normalized_name=N'" + EncodeSql(normalized) + "'");
+            if (exists != null && exists.id > 0)
+            {
+                return exists.id;
+            }
+
+            bool chinese = ContainsChinese(cleanName);
+            Journal model = new Journal
+            {
+                name_cn = chinese ? Function.HtmlEncode(cleanName) : string.Empty,
+                name_en = chinese ? string.Empty : Function.HtmlEncode(cleanName),
+                normalized_name = normalized,
+                issn = string.Empty,
+                eissn = string.Empty,
+                publisher = Function.HtmlEncode(publisher.Text.Trim()),
+                country = string.Empty,
+                subject = string.Empty,
+                website = string.Empty,
+                status = 1,
+                addtime = DateTime.Now,
+                updatetime = DateTime.Now
+            };
+            int id = Function.ConvertTo<int>(journalBll.AddIdentity(model, "id"), 0);
+            return id > 0 ? (int?)id : null;
+        }
+
+        private int? ResolveConferenceId(string conferenceName, string submittedId)
+        {
+            string cleanName = NormalizePlainText(conferenceName);
+            if (string.IsNullOrWhiteSpace(cleanName))
+            {
+                return null;
+            }
+
+            int selectedId = Function.ConvertTo<int>(submittedId, 0);
+            Conference selected = selectedId > 0 ? conferenceBll.SelectSingle("id=" + selectedId + " and status<>-1") : null;
+            if (selected != null && selected.id > 0)
+            {
+                return selected.id;
+            }
+
+            string normalized = NormalizeMasterName(cleanName);
+            Conference exists = conferenceBll.SelectSingle("status<>-1 and normalized_name=N'" + EncodeSql(normalized) + "'");
+            if (exists != null && exists.id > 0)
+            {
+                return exists.id;
+            }
+
+            bool chinese = ContainsChinese(cleanName);
+            Conference model = new Conference
+            {
+                name_cn = chinese ? Function.HtmlEncode(cleanName) : string.Empty,
+                name_en = chinese ? string.Empty : Function.HtmlEncode(cleanName),
+                acronym = string.Empty,
+                normalized_name = normalized,
+                organizer = Function.HtmlEncode(publisher.Text.Trim()),
+                country = string.Empty,
+                city = string.Empty,
+                start_date = null,
+                end_date = null,
+                website = string.Empty,
+                status = 1,
+                addtime = DateTime.Now,
+                updatetime = DateTime.Now
+            };
+            int id = Function.ConvertTo<int>(conferenceBll.AddIdentity(model, "id"), 0);
+            return id > 0 ? (int?)id : null;
+        }
+
+        private IEnumerable<string> SplitMasterNames(string value)
+        {
+            foreach (string part in Regex.Split(value ?? string.Empty, @"[;\uFF1B|\r\n]+"))
+            {
+                string clean = NormalizePlainText(part);
+                if (!string.IsNullOrWhiteSpace(clean))
+                {
+                    yield return clean;
+                }
+            }
+        }
+
+        private string NormalizePlainText(string value)
+        {
+            return Regex.Replace(Function.HtmlDiscode(value ?? string.Empty).Replace('\u00A0', ' '), @"\s+", " ").Trim();
+        }
+
+        private string NormalizeMasterName(string value)
+        {
+            return NormalizePlainText(value).ToLowerInvariant();
+        }
+
+        private bool ContainsChinese(string value)
+        {
+            return Regex.IsMatch(value ?? string.Empty, @"[\u3400-\u9fff\uf900-\ufaff]");
+        }
+
+        private string EncodeSql(string value)
+        {
+            return Function.HtmlEncode(value ?? string.Empty).Replace("'", "''");
         }
 
         private void HandleCoverUpload(Literature literature)
@@ -413,8 +836,14 @@ namespace Web.admin
             master.source_type = revision.source_type;
             master.language = revision.language;
             master.publish_year = revision.publish_year;
+            master.publish_month = revision.publish_month;
+            master.publish_day = revision.publish_day;
+            master.publish_date = revision.publish_date;
+            master.publish_date_precision = revision.publish_date_precision;
             master.journal_name = revision.journal_name;
+            master.journal_id = revision.journal_id;
             master.conference_name = revision.conference_name;
+            master.conference_id = revision.conference_id;
             master.publisher = revision.publisher;
             master.volume = revision.volume;
             master.issue = revision.issue;
@@ -429,7 +858,7 @@ namespace Web.admin
 
             string revisionAuthors = LiteratureRelationSync.GetAuthorNames(revision.id);
             string masterTags = LiteratureRelationSync.GetTagNames(master.id);
-            LiteratureRelationSync.SyncMetadata(master, revisionAuthors, masterTags);
+            LiteratureRelationSync.SyncMetadata(master, revisionAuthors, masterTags, BuildAuthorDetailsJson(revision.id));
 
             int adminId = Function.ConvertTo<int>(Cookie.GetCookie("LMS_AdminID"), 0);
             string updateRevisionSql = "status=4,reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE(),remark=N'\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u5BA1\u6838\u901A\u8FC7\u5E76\u5E94\u7528\u5230\u6587\u732EID:" + masterId + "\u3002'";
@@ -556,6 +985,12 @@ namespace Web.admin
                 }
             }
             return sb.ToString();
+        }
+
+        private class MasterOption
+        {
+            public int id { get; set; }
+            public string name { get; set; }
         }
     }
 }

@@ -1,4 +1,4 @@
-using LiteratureManager.Common;
+﻿using LiteratureManager.Common;
 using BLL;
 using Model;
 using System;
@@ -15,8 +15,6 @@ namespace Web.admin
         private readonly BLLBase<Literature> literatureBll = new BLLBase<Literature>();
         private readonly BLLBase<LiteratureCategory> categoryBll = new BLLBase<LiteratureCategory>();
         private readonly BLLBase<LiteratureComment> literatureCommentBll = new BLLBase<LiteratureComment>();
-        private readonly BLLBase<ServiceLog_List> serviceLogBll = new BLLBase<ServiceLog_List>();
-        private readonly BLLBase<ServiceLogInfo_List> serviceLogInfoBll = new BLLBase<ServiceLogInfo_List>();
         private readonly BLLBase<user_list> userBll = new BLLBase<user_list>();
         public bool isLoading = false;
         public int LiteratureId = 0;
@@ -85,6 +83,7 @@ namespace Web.admin
             AppendInfo(grid, "出版社", Function.HtmlDiscode(literature.publisher));
             AppendInfo(grid, "卷期页", JoinParts(Function.HtmlDiscode(literature.volume), Function.HtmlDiscode(literature.issue), Function.HtmlDiscode(literature.pages)));
             AppendInfo(grid, "作者单位", Function.HtmlDiscode(literature.institution));
+            AppendInfoHtml(grid, "\u4F5C\u8005\u673A\u6784\u5BF9\u5E94", GetAuthorInstitutionHtml(literature.id));
             AppendInfo(grid, "关键词", Function.HtmlDiscode(literature.keywords));
             AppendInfo(grid, "摘要", Function.HtmlDiscode(literature.abstract_text));
             AppendInfo(grid, "合并投稿记录", GetMergedSubmissionSummary(literature.id));
@@ -171,7 +170,7 @@ namespace Web.admin
         private Dictionary<string, int> GetDailyCommentTrend(int literatureId, DateTime startDate)
         {
             Dictionary<string, int> map = new Dictionary<string, int>();
-            string sql = GetCommentSql(literatureId, "convert(varchar(10),addtime,120) as day_key,count(1) as num", " where addtime>='" + startDate.ToString("yyyy-MM-dd") + "' group by convert(varchar(10),addtime,120)");
+            string sql = GetCommentSql(literatureId, "convert(varchar(10),addtime,120) as day_key,count(1) as num", " and addtime>='" + startDate.ToString("yyyy-MM-dd") + "' group by convert(varchar(10),addtime,120)");
             DataTable dt = literatureBll.GetDatatable(sql);
             if (dt != null)
             {
@@ -195,49 +194,19 @@ namespace Web.admin
             }
             return count;
         }
-
         private string GetCommentSql(int literatureId, string fields, string suffix)
         {
-            return "select " + fields + " from (" + GetCommentBaseSql(literatureId) + ") t" + suffix;
-        }
-
-        private string GetCommentBaseSql(int literatureId)
-        {
-            string pageUrl = "/LiteratureInfo.aspx?id=" + literatureId;
-            string safeUrl = pageUrl.Replace("'", "''");
-            return @"
-select
-    'new' as source_type,
-    id,
-    cast(null as int) as source_service_log_id,
-    content as comment_text,
-    addtime,
-    userid,
-    updatetime as sort_time
+            return @"select " + fields + @"
 from LiteratureComment
 where parent_id=0
   and is_deleted=0
   and status=1
-  and (canonical_literature_id=" + literatureId + @" or literature_id=" + literatureId + @")
-union all
-select
-    'legacy' as source_type,
-    s.id,
-    s.id as source_service_log_id,
-    s.info_ as comment_text,
-    s.addtime,
-    s.userid,
-    s.uptime as sort_time
-from ServiceLog_List s
-where s.name like N'[[]\u6587\u732E\u8BC4\u8BBA]%'
-  and s.info_ like N'%" + safeUrl + @"%'
-  and s.status in (1,2)
-  and not exists(select 1 from LiteratureComment lc where lc.source_service_log_id=s.id)";
+  and (canonical_literature_id=" + literatureId + @" or literature_id=" + literatureId + @")" + suffix;
         }
 
         private string GetCommentHtml(int literatureId)
         {
-            DataTable commentDt = literatureCommentBll.GetDatatable(GetCommentSql(literatureId, "top 50 source_type,id,source_service_log_id,comment_text,addtime,userid", " order by sort_time desc, addtime desc, id desc"));
+            DataTable commentDt = literatureCommentBll.GetDatatable(GetCommentSql(literatureId, "top 50 id,content as comment_text,addtime,userid", " order by updatetime desc, addtime desc, id desc"));
             int count = commentDt != null ? commentDt.Rows.Count : 0;
             StringBuilder html = new StringBuilder();
             html.Append("<div class=\"lit-admin-comments\">");
@@ -251,8 +220,6 @@ where s.name like N'[[]\u6587\u732E\u8BC4\u8BBA]%'
                 {
                     int userId = Function.ConvertTo<int>(Convert.ToString(row["userid"]), 0);
                     int commentId = Function.ConvertTo<int>(Convert.ToString(row["id"]), 0);
-                    int serviceLogId = Function.ConvertTo<int>(Convert.ToString(row["source_service_log_id"]), 0);
-                    string sourceType = Convert.ToString(row["source_type"]);
                     user_list commentUser = userBll.SelectSingle("id=" + userId);
                     string userName = GetDisplayUserName(commentUser, userId);
                     DateTime addtime = Function.ConvertTo<DateTime>(Convert.ToString(row["addtime"]), DateTime.MinValue);
@@ -260,33 +227,19 @@ where s.name like N'[[]\u6587\u732E\u8BC4\u8BBA]%'
                     html.Append(Server.HtmlEncode(userName));
                     html.Append("</strong><span>");
                     html.Append(addtime == DateTime.MinValue ? string.Empty : addtime.ToString("yyyy-MM-dd HH:mm"));
-                    if (sourceType == "legacy")
-                    {
-                        html.Append("</span><a href=\"Admin_ServiceLogInfo.aspx?MenuId=");
-                        html.Append(MenuId);
-                        html.Append("&id=");
-                        html.Append(serviceLogId);
-                        html.Append("&BackURL=");
-                        html.Append(Function.GetEncodeURL());
-                        html.Append("\">&#26597;&#30475;&#26087;&#24037;&#21333;</a>");
-                    }
-                    else
-                    {
-                        html.Append("</span><a href=\"Admin_LiteratureCommentList.aspx?MenuId=");
-                        html.Append(MenuId);
-                        html.Append("&LiteratureId=");
-                        html.Append(literatureId);
-                        html.Append("&CommentId=");
-                        html.Append(commentId);
-                        html.Append("&BackURL=");
-                        html.Append(Function.GetEncodeURL());
-                        html.Append("\">&#31649;&#29702;&#35780;&#35770;</a>");
-                    }
+                    html.Append("</span><a href=\"Admin_LiteratureCommentList.aspx?MenuId=");
+                    html.Append(MenuId);
+                    html.Append("&LiteratureId=");
+                    html.Append(literatureId);
+                    html.Append("&CommentId=");
+                    html.Append(commentId);
+                    html.Append("&BackURL=");
+                    html.Append(Function.GetEncodeURL());
+                    html.Append("\">&#31649;&#29702;&#35780;&#35770;</a>");
                     html.Append("</div><div class=\"lit-admin-comment-text\">");
-                    string rawCommentText = Convert.ToString(row["comment_text"]);
-                    html.Append(FormatPublicText(sourceType == "legacy" ? ExtractLiteratureCommentText(rawCommentText) : Function.HtmlDiscode(rawCommentText)));
+                    html.Append(FormatPublicText(Function.HtmlDiscode(Convert.ToString(row["comment_text"]))));
                     html.Append("</div>");
-                    html.Append(sourceType == "legacy" ? GetAdminReplyHtml(serviceLogId) : GetLiteratureCommentReplyHtml(commentId));
+                    html.Append(GetLiteratureCommentReplyHtml(commentId));
                     html.Append("</article>");
                 }
             }
@@ -297,7 +250,6 @@ where s.name like N'[[]\u6587\u732E\u8BC4\u8BBA]%'
             }
             return html.ToString();
         }
-
         private string GetLiteratureCommentReplyHtml(int parentCommentId)
         {
             DataTable replyDt = literatureCommentBll.GetDatatable("select content,addtime,userid from LiteratureComment where parent_id=" + parentCommentId + " and is_deleted=0 and status=1 order by addtime asc,id asc");
@@ -329,37 +281,6 @@ where s.name like N'[[]\u6587\u732E\u8BC4\u8BBA]%'
             replyDt.Dispose();
             return html.ToString();
         }
-
-        private string GetAdminReplyHtml(int serviceLogId)
-        {
-            DataTable replyDt = serviceLogInfoBll.GetDatatable("select info_, addtime, adminname from ServiceLogInfo_List where ServiceLog_Id=" + serviceLogId + " and type=2 order by addtime asc, id asc");
-            if (replyDt == null || replyDt.Rows.Count == 0)
-            {
-                if (replyDt != null)
-                {
-                    replyDt.Dispose();
-                }
-                return string.Empty;
-            }
-            StringBuilder html = new StringBuilder();
-            html.Append("<div class=\"lit-admin-replies\">");
-            foreach (DataRow reply in replyDt.Rows)
-            {
-                string adminName = Function.HtmlDiscode(Convert.ToString(reply["adminname"]));
-                DateTime addtime = Function.ConvertTo<DateTime>(Convert.ToString(reply["addtime"]), DateTime.MinValue);
-                html.Append("<div class=\"lit-admin-reply\"><strong>");
-                html.Append(Server.HtmlEncode(string.IsNullOrWhiteSpace(adminName) ? "\u7BA1\u7406\u5458" : adminName));
-                html.Append("</strong><span>");
-                html.Append(addtime == DateTime.MinValue ? string.Empty : addtime.ToString("yyyy-MM-dd HH:mm"));
-                html.Append("</span><p>");
-                html.Append(FormatPublicText(Function.HtmlDiscode(Convert.ToString(reply["info_"]))));
-                html.Append("</p></div>");
-            }
-            html.Append("</div>");
-            replyDt.Dispose();
-            return html.ToString();
-        }
-
         private string GetDisplayUserName(user_list user, int userId)
         {
             if (user != null && user.id > 0)
@@ -377,21 +298,6 @@ where s.name like N'[[]\u6587\u732E\u8BC4\u8BBA]%'
             }
             return userId > 0 ? "\u7528\u6237 " + userId : "\u533F\u540D\u7528\u6237";
         }
-
-        private string ExtractLiteratureCommentText(string rawInfo)
-        {
-            string info = Function.HtmlDiscode(rawInfo);
-            string marker = "\u8BC4\u8BBA\u5185\u5BB9\uFF1A";
-            int index = info.IndexOf(marker, StringComparison.Ordinal);
-            if (index >= 0)
-            {
-                info = info.Substring(index + marker.Length);
-            }
-            info = Regex.Replace(info, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
-            info = Regex.Replace(info, "<.*?>", string.Empty);
-            return Function.HtmlDiscode(info).Trim();
-        }
-
         private string FormatPublicText(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -411,12 +317,75 @@ where s.name like N'[[]\u6587\u732E\u8BC4\u8BBA]%'
             return "未分类";
         }
 
+        private string GetAuthorInstitutionHtml(int literatureId)
+        {
+            DataTable dt = literatureBll.GetDatatable(@"
+select
+    m.author_order,
+    coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N''),N'未命名作者') as author_name,
+    m.affiliation_text,
+    (
+        select string_agg(coalesce(nullif(i.name_cn,N''),nullif(i.name_en,N''),nullif(aim.affiliation_text,N'')),N'；') within group (order by aim.institution_order, aim.id)
+        from LiteratureAuthorInstitutionMap aim
+        left join Institution i on i.id=aim.institution_id and i.status<>-1
+        where aim.literature_author_map_id=m.id
+           or (isnull(aim.literature_author_map_id,0)=0 and aim.literature_id=m.literature_id and aim.author_id=m.author_id)
+    ) as institution_names
+from LiteratureAuthorMap m
+inner join Author a on a.id=m.author_id
+where m.literature_id=" + literatureId + @"
+order by m.author_order,m.id");
+            if (dt == null || dt.Rows.Count <= 0)
+            {
+                if (dt != null)
+                {
+                    dt.Dispose();
+                }
+                return string.Empty;
+            }
+
+            StringBuilder html = new StringBuilder();
+            html.Append("<div class=\"lit-admin-author-affiliations\">");
+            foreach (DataRow row in dt.Rows)
+            {
+                string authorName = Function.HtmlDiscode(Convert.ToString(row["author_name"]));
+                string institutionNames = Function.HtmlDiscode(Convert.ToString(row["institution_names"]));
+                string affiliationText = Function.HtmlDiscode(Convert.ToString(row["affiliation_text"]));
+                if (string.IsNullOrWhiteSpace(institutionNames))
+                {
+                    institutionNames = affiliationText;
+                }
+                if (string.IsNullOrWhiteSpace(institutionNames))
+                {
+                    institutionNames = "\u672A\u5339\u914D\u673A\u6784";
+                }
+
+                html.Append("<div><strong>");
+                html.Append(Server.HtmlEncode(authorName));
+                html.Append("</strong><span>");
+                html.Append(Server.HtmlEncode(institutionNames));
+                html.Append("</span></div>");
+            }
+            html.Append("</div>");
+            dt.Dispose();
+            return html.ToString();
+        }
+
         private void AppendInfo(StringBuilder grid, string label, string value)
         {
             grid.Append("<div class=\"label\">");
             grid.Append(Server.HtmlEncode(label));
             grid.Append("</div><div class=\"value\">");
             grid.Append(Server.HtmlEncode(string.IsNullOrWhiteSpace(value) ? "暂无" : value));
+            grid.Append("</div>");
+        }
+
+        private void AppendInfoHtml(StringBuilder grid, string label, string htmlValue)
+        {
+            grid.Append("<div class=\"label\">");
+            grid.Append(Server.HtmlEncode(label));
+            grid.Append("</div><div class=\"value\">");
+            grid.Append(string.IsNullOrWhiteSpace(htmlValue) ? "&#26242;&#26080;" : htmlValue);
             grid.Append("</div>");
         }
 
@@ -465,3 +434,5 @@ order by l.addtime desc,l.id desc");
         }
     }
 }
+
+

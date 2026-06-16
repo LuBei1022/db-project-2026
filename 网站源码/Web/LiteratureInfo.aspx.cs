@@ -15,8 +15,6 @@ namespace Web
         private readonly BLLBase<LiteratureDownloadLog> downloadLogBll = new BLLBase<LiteratureDownloadLog>();
         private readonly BLLBase<integrateExchangeLog_list> exchangeLogBll = new BLLBase<integrateExchangeLog_list>();
         private readonly BLLBase<LiteratureComment> literatureCommentBll = new BLLBase<LiteratureComment>();
-        private readonly BLLBase<ServiceLog_List> serviceLogBll = new BLLBase<ServiceLog_List>();
-        private readonly BLLBase<ServiceLogInfo_List> serviceLogInfoBll = new BLLBase<ServiceLogInfo_List>();
         private readonly BLLBase<user_list> userBll = new BLLBase<user_list>();
         private readonly BLLBase<LiteratureLike> literatureLikeBll = new BLLBase<LiteratureLike>();
         private readonly BLLBase<LiteratureFavorite> literatureFavoriteBll = new BLLBase<LiteratureFavorite>();
@@ -28,6 +26,7 @@ namespace Web
         public string metaLine = string.Empty;
         public string doi = "\u6682\u65E0";
         public string institution = "\u6682\u65E0";
+        public string authorInstitutionHtml = "\u6682\u65E0";
         public string journalName = "\u6682\u65E0";
         public string conferenceName = "\u6682\u65E0";
         public string keywords = "\u6682\u65E0";
@@ -107,6 +106,7 @@ namespace Web
             pageTitle = title;
             doi = Safe(Function.HtmlDiscode(literature.doi), "\u6682\u65E0");
             institution = Safe(Function.HtmlDiscode(literature.institution), "\u6682\u65E0");
+            authorInstitutionHtml = GetAuthorInstitutionHtml(literature.id);
             journalName = Safe(Function.HtmlDiscode(literature.journal_name), "\u6682\u65E0");
             conferenceName = Safe(Function.HtmlDiscode(literature.conference_name), "\u6682\u65E0");
             keywords = Safe(Function.HtmlDiscode(literature.keywords), "\u6682\u65E0");
@@ -131,7 +131,7 @@ namespace Web
 
             StringBuilder meta = new StringBuilder();
             AppendMeta(meta, authorNames);
-            AppendMeta(meta, literature.publish_year.HasValue ? literature.publish_year.Value.ToString() : string.Empty);
+            AppendMeta(meta, FormatPublishDate(literature));
             AppendMeta(meta, Function.HtmlDiscode(literature.source_type));
             AppendMeta(meta, Function.HtmlDiscode(literature.language));
             metaLine = meta.ToString();
@@ -259,10 +259,11 @@ namespace Web
             revision.abstract_text = Function.HtmlEncode((Request.Form["owner_abstract_text"] ?? string.Empty).Trim());
             revision.source_type = original.source_type;
             revision.language = original.language;
-            revision.publish_year = Function.ConvertTo<int>((Request.Form["owner_publish_year"] ?? string.Empty).Trim(), 0);
-            if (revision.publish_year <= 0)
+            string publishDateError = ApplyPublicationDate(revision, Request.Form["owner_publish_year"], Request.Form["owner_publish_month"], Request.Form["owner_publish_day"]);
+            if (!string.IsNullOrWhiteSpace(publishDateError))
             {
-                revision.publish_year = null;
+                Function.Show_Msg(publishDateError, "/LiteratureInfo.aspx?id=" + original.id);
+                return;
             }
             revision.journal_name = Function.HtmlEncode((Request.Form["owner_journal_name"] ?? string.Empty).Trim());
             revision.conference_name = Function.HtmlEncode((Request.Form["owner_conference_name"] ?? string.Empty).Trim());
@@ -286,7 +287,9 @@ namespace Web
             if (revisionId > 0)
             {
                 revision.id = revisionId;
-                LiteratureRelationSync.SyncMetadata(revision, (Request.Form["owner_author_names"] ?? string.Empty).Trim(), string.Empty);
+                string ownerAuthorNames = (Request.Form["owner_author_names"] ?? string.Empty).Trim();
+                string ownerAuthorDetails = (Request.Form["owner_author_details"] ?? string.Empty).Trim();
+                LiteratureRelationSync.SyncMetadata(revision, ownerAuthorNames, string.Empty, ownerAuthorDetails);
                 Function.Show_Msg("\u5143\u6570\u636E\u4FEE\u6539\u7533\u8BF7\u5DF2\u63D0\u4EA4\uFF0C\u8BF7\u7B49\u5F85\u540E\u53F0\u5BA1\u6838\u3002", "/LiteratureInfo.aspx?id=" + original.id);
             }
             else
@@ -301,6 +304,68 @@ namespace Web
             return literatureBll.Exists("userid=" + userId + " and status=0 and remark like N'" + marker + "%'");
         }
 
+        private string ApplyPublicationDate(Literature literature, string yearText, string monthText, string dayText)
+        {
+            int year = Function.ConvertTo<int>((yearText ?? string.Empty).Trim(), 0);
+            int month = Function.ConvertTo<int>((monthText ?? string.Empty).Trim(), 0);
+            int day = Function.ConvertTo<int>((dayText ?? string.Empty).Trim(), 0);
+
+            if (year <= 0)
+            {
+                if (month > 0 || day > 0)
+                {
+                    return "填写发表月份或日期时必须同时填写发表年份。";
+                }
+                literature.publish_year = null;
+                literature.publish_month = null;
+                literature.publish_day = null;
+                literature.publish_date = null;
+                literature.publish_date_precision = "unknown";
+                return string.Empty;
+            }
+            if (year < 1000 || year > 9999)
+            {
+                return "发表年份格式不正确。";
+            }
+            if (month < 0 || month > 12)
+            {
+                return "发表月份必须在 1-12 之间。";
+            }
+            if (month == 0 && day > 0)
+            {
+                return "填写发表日期时必须同时填写发表月份。";
+            }
+            if (day < 0 || day > 31)
+            {
+                return "发表日期格式不正确。";
+            }
+
+            literature.publish_year = year;
+            literature.publish_month = month > 0 ? (int?)month : null;
+            literature.publish_day = null;
+            literature.publish_date = new DateTime(year, 12, 31);
+            literature.publish_date_precision = "year";
+
+            if (month > 0)
+            {
+                int maxDay = DateTime.DaysInMonth(year, month);
+                if (day > maxDay)
+                {
+                    return "发表日期超过该月份最大天数。";
+                }
+                literature.publish_date = new DateTime(year, month, maxDay);
+                literature.publish_date_precision = "month";
+                if (day > 0)
+                {
+                    literature.publish_day = day;
+                    literature.publish_date = new DateTime(year, month, day);
+                    literature.publish_date_precision = "day";
+                }
+            }
+
+            return string.Empty;
+        }
+
         private string GetOwnerMetadataModalHtml(Literature literature, string authorNames)
         {
             StringBuilder html = new StringBuilder();
@@ -308,17 +373,27 @@ namespace Web
             html.Append("<div class=\"lit-modal-head\"><h3>\u63D0\u4EA4\u5143\u6570\u636E\u4FEE\u6539</h3><button type=\"button\" class=\"lit-modal-close\" onclick=\"closeOwnerMetadataModal()\">×</button></div>");
             html.Append("<form method=\"post\" action=\"/LiteratureInfo.aspx?id=");
             html.Append(literature.id);
-            html.Append("&action=metadata_update\"><div class=\"lit-modal-body lit-owner-meta-body\">");
+            html.Append("&action=metadata_update\" onsubmit=\"return collectOwnerMetadata();\"><div class=\"lit-modal-body lit-owner-meta-body\">");
+            html.Append("<input type=\"hidden\" name=\"owner_author_details\" id=\"owner_author_details\" value=\"\" />");
             html.Append("<p class=\"lit-modal-tip\">\u63D0\u4EA4\u540E\u4F1A\u751F\u6210\u4E00\u6761\u5F85\u5BA1\u6838\u4FEE\u6539\u8BB0\u5F55\uFF0C\u5BA1\u6838\u901A\u8FC7\u524D\u4E0D\u4F1A\u5F71\u54CD\u5DF2\u516C\u5F00\u7684\u6587\u732E\u5185\u5BB9\u3002</p>");
             AppendOwnerInput(html, "\u6587\u732E\u6807\u9898 *", "owner_title", Function.HtmlDiscode(literature.title), false);
             AppendOwnerInput(html, "\u4F5C\u8005", "owner_author_names", authorNames, false);
             AppendOwnerInput(html, "\u4F5C\u8005\u5355\u4F4D", "owner_institution", Function.HtmlDiscode(literature.institution), false);
+            html.Append("<div class=\"lit-owner-author-actions\"><span>\u4F5C\u8005\u673A\u6784\u5BF9\u5E94\u5173\u7CFB</span><button type=\"button\" onclick=\"refreshOwnerAuthorRows()\">\u6309\u4F5C\u8005\u5B57\u6BB5\u5237\u65B0</button></div>");
+            html.Append("<div id=\"ownerAuthorRefreshStatus\" class=\"lit-owner-author-refresh-status\"></div>");
+            html.Append("<div id=\"ownerAuthorEditor\" class=\"lit-owner-author-editor\">");
+            html.Append(BuildOwnerAuthorAffiliationEditorHtml(literature.id, authorNames));
+            html.Append("</div>");
+            html.Append("<div class=\"lit-owner-author-hint\">\u8FD9\u91CC\u586B\u5199\u7684\u662F\u6BCF\u4F4D\u4F5C\u8005\u5728\u672C\u6587\u4E2D\u7684\u673A\u6784\uFF1B\u591A\u4E2A\u673A\u6784\u7528\u5206\u53F7\u5206\u9694\u3002\u63D0\u4EA4\u540E\u8FDB\u5165\u540E\u53F0\u5BA1\u6838\uFF0C\u4E0D\u4F1A\u76F4\u63A5\u8986\u76D6\u516C\u5F00\u6587\u732E\u3002</div>");
             AppendOwnerInput(html, "DOI", "owner_doi", Function.HtmlDiscode(literature.doi), false);
             html.Append("<div class=\"lit-owner-meta-grid\">");
             AppendOwnerInput(html, "\u671F\u520A", "owner_journal_name", Function.HtmlDiscode(literature.journal_name), false);
             AppendOwnerInput(html, "\u4F1A\u8BAE", "owner_conference_name", Function.HtmlDiscode(literature.conference_name), false);
             html.Append("</div><div class=\"lit-owner-meta-grid\">");
             AppendOwnerInput(html, "\u53D1\u8868\u5E74\u4EFD", "owner_publish_year", literature.publish_year.HasValue ? literature.publish_year.Value.ToString() : string.Empty, false);
+            AppendOwnerInput(html, "\u53D1\u8868\u6708\u4EFD", "owner_publish_month", literature.publish_month.HasValue ? literature.publish_month.Value.ToString() : string.Empty, false);
+            html.Append("</div><div class=\"lit-owner-meta-grid\">");
+            AppendOwnerInput(html, "\u53D1\u8868\u65E5\u671F", "owner_publish_day", literature.publish_day.HasValue ? literature.publish_day.Value.ToString() : string.Empty, false);
             AppendOwnerInput(html, "\u51FA\u7248\u793E", "owner_publisher", Function.HtmlDiscode(literature.publisher), false);
             html.Append("</div><div class=\"lit-owner-meta-grid\">");
             AppendOwnerInput(html, "\u5377", "owner_volume", Function.HtmlDiscode(literature.volume), false);
@@ -329,6 +404,95 @@ namespace Web
             AppendOwnerInput(html, "\u6458\u8981", "owner_abstract_text", Function.HtmlDiscode(literature.abstract_text), true);
             html.Append("</div><div class=\"lit-modal-foot\"><button type=\"button\" class=\"cancel\" onclick=\"closeOwnerMetadataModal()\">\u53D6\u6D88</button><button type=\"submit\" class=\"submit\">\u63D0\u4EA4\u5BA1\u6838</button></div></form></div></div>");
             return html.ToString();
+        }
+
+        private string BuildOwnerAuthorAffiliationEditorHtml(int literatureId, string authorNames)
+        {
+            StringBuilder html = new StringBuilder();
+            DataTable dt = literatureBll.GetDatatable(@"
+select
+    m.author_id,
+    coalesce(nullif(a.name_cn,N''), nullif(a.name_en,N''), nullif(m.display_author_name,N''), nullif(m.raw_author_text,N''), N'') as author_name,
+    coalesce(
+        nullif(
+            stuff((
+                select N'；' + coalesce(nullif(i.name_cn,N''), nullif(i.name_en,N''), nullif(aim.affiliation_text,N''))
+                from LiteratureAuthorInstitutionMap aim
+                left join Institution i on i.id=aim.institution_id and i.status<>-1
+                where aim.literature_author_map_id=m.id
+                   or (isnull(aim.literature_author_map_id,0)=0 and aim.literature_id=m.literature_id and aim.author_id=m.author_id)
+                order by aim.institution_order, aim.id
+                for xml path(''), type
+            ).value('.','nvarchar(max)'),1,1,N''),
+            N''
+        ),
+        nullif(m.affiliation_text,N''),
+        N''
+    ) as institution_names
+from LiteratureAuthorMap m
+inner join Author a on a.id=m.author_id
+where m.literature_id=" + literatureId + @"
+order by m.author_order,m.id");
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                foreach (DataRow row in dt.Rows)
+                {
+                    string name = Function.HtmlDiscode(Convert.ToString(row["author_name"]));
+                    if (string.IsNullOrWhiteSpace(name))
+                    {
+                        continue;
+                    }
+                    string affiliation = Function.HtmlDiscode(Convert.ToString(row["institution_names"]));
+                    AppendOwnerAuthorAffiliationRow(html, Function.ConvertTo<int>(Convert.ToString(row["author_id"]), 0), name, affiliation);
+                }
+                dt.Dispose();
+            }
+
+            if (html.Length == 0)
+            {
+                foreach (string name in SplitOwnerAuthorNames(authorNames))
+                {
+                    AppendOwnerAuthorAffiliationRow(html, 0, name, string.Empty);
+                }
+            }
+
+            if (html.Length == 0)
+            {
+                html.Append("<div class=\"lit-owner-author-hint\">\u8BF7\u5148\u586B\u5199\u4F5C\u8005\u59D3\u540D\uFF0C\u518D\u5237\u65B0\u751F\u6210\u4F5C\u8005\u673A\u6784\u5BF9\u5E94\u5173\u7CFB\u3002</div>");
+            }
+            return html.ToString();
+        }
+
+        private void AppendOwnerAuthorAffiliationRow(StringBuilder html, int authorId, string authorName, string affiliation)
+        {
+            string cleanName = Function.HtmlDiscode(authorName ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(cleanName))
+            {
+                return;
+            }
+            html.Append("<div class=\"lit-owner-author-row\" data-author-id=\"");
+            html.Append(authorId);
+            html.Append("\" data-original-name=\"");
+            html.Append(Server.HtmlEncode(cleanName));
+            html.Append("\"><input type=\"text\" data-owner-author-name=\"1\" value=\"");
+            html.Append(Server.HtmlEncode(cleanName));
+            html.Append("\" placeholder=\"\u4F5C\u8005\u59D3\u540D\" /><textarea data-owner-author-affiliation=\"1\" placeholder=\"\u8BE5\u4F5C\u8005\u5728\u672C\u6587\u4E2D\u7684\u673A\u6784\uFF1B\u591A\u4E2A\u673A\u6784\u7528\u5206\u53F7\u5206\u9694\">");
+            html.Append(Server.HtmlEncode(Function.HtmlDiscode(affiliation ?? string.Empty)));
+            html.Append("</textarea></div>");
+        }
+
+        private List<string> SplitOwnerAuthorNames(string value)
+        {
+            List<string> names = new List<string>();
+            foreach (string part in Regex.Split(Function.HtmlDiscode(value ?? string.Empty), @"\s+(?:and|&)\s+|[,，;；|、\r\n]+", RegexOptions.IgnoreCase))
+            {
+                string current = part.Trim();
+                if (!string.IsNullOrWhiteSpace(current) && !names.Contains(current))
+                {
+                    names.Add(current);
+                }
+            }
+            return names;
         }
 
         private void AppendOwnerInput(StringBuilder html, string label, string name, string value, bool area)
@@ -718,6 +882,74 @@ namespace Web
             return string.IsNullOrWhiteSpace(value) ? fallback : Server.HtmlEncode(value);
         }
 
+        private string FormatPublishDate(Literature literature)
+        {
+            if (literature == null || !literature.publish_year.HasValue || literature.publish_year.Value <= 0)
+            {
+                return string.Empty;
+            }
+            if (!literature.publish_month.HasValue || literature.publish_month.Value <= 0)
+            {
+                return literature.publish_year.Value.ToString();
+            }
+            if (!literature.publish_day.HasValue || literature.publish_day.Value <= 0)
+            {
+                return literature.publish_year.Value.ToString("0000") + "-" + literature.publish_month.Value.ToString("00");
+            }
+            return literature.publish_year.Value.ToString("0000") + "-" + literature.publish_month.Value.ToString("00") + "-" + literature.publish_day.Value.ToString("00");
+        }
+
+        private string GetAuthorInstitutionHtml(int currentLiteratureId)
+        {
+            DataTable dt = literatureBll.GetDatatable(@"
+select
+    coalesce(nullif(a.name_cn,N''), nullif(a.name_en,N'')) as author_name,
+    coalesce(
+        nullif(
+            stuff((
+                select N'；' + coalesce(nullif(i.name_cn,N''), nullif(i.name_en,N''), nullif(aim.affiliation_text,N''))
+                from LiteratureAuthorInstitutionMap aim
+                left join Institution i on i.id=aim.institution_id and i.status<>-1
+                where aim.literature_author_map_id=m.id
+                   or (isnull(aim.literature_author_map_id,0)=0 and aim.literature_id=m.literature_id and aim.author_id=m.author_id)
+                order by aim.institution_order, aim.id
+                for xml path(''), type
+            ).value('.','nvarchar(max)'),1,1,N''),
+            N''
+        ),
+        nullif(m.affiliation_text,N''),
+        N''
+    ) as institution_names
+from LiteratureAuthorMap m
+inner join Author a on a.id=m.author_id
+where m.literature_id=" + currentLiteratureId + @"
+order by m.author_order,m.id");
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                return "\u6682\u65E0";
+            }
+
+            StringBuilder html = new StringBuilder();
+            html.Append("<div class=\"lit-author-institution-list\">");
+            foreach (DataRow row in dt.Rows)
+            {
+                string author = Function.HtmlDiscode(Convert.ToString(row["author_name"]));
+                string institutions = Function.HtmlDiscode(Convert.ToString(row["institution_names"]));
+                if (string.IsNullOrWhiteSpace(author))
+                {
+                    continue;
+                }
+                html.Append("<div><strong>");
+                html.Append(Server.HtmlEncode(author));
+                html.Append("</strong><span>");
+                html.Append(Server.HtmlEncode(string.IsNullOrWhiteSpace(institutions) ? "\u672A\u5339\u914D\u673A\u6784" : institutions));
+                html.Append("</span></div>");
+            }
+            html.Append("</div>");
+            dt.Dispose();
+            return html.ToString();
+        }
+
         private string GetCitationModalHtml(Literature literature, string authorNames)
         {
             string missingFieldsText = GetMissingCitationFieldsText(literature, authorNames);
@@ -1035,44 +1267,17 @@ namespace Web
             value = value.Trim();
             return value.EndsWith(".") ? value : value + ".";
         }
-
         private string GetCommentSectionHtml(int currentLiteratureId, user_list currentUser)
         {
             int currentUserId = currentUser != null ? currentUser.id : 0;
-            string pageUrl = "/LiteratureInfo.aspx?id=" + currentLiteratureId;
-            string safeUrl = Function.HtmlEncode(pageUrl).Replace("'", "''");
             string sql = @"
-select top 50 source_type,id,source_service_log_id,comment_text,addtime,userid
-from (
-    select
-        'new' as source_type,
-        id,
-        cast(null as int) as source_service_log_id,
-        content as comment_text,
-        addtime,
-        userid,
-        updatetime as sort_time
-    from LiteratureComment
-    where parent_id=0
-      and is_deleted=0
-      and status=1
-      and (canonical_literature_id=" + currentLiteratureId + @" or literature_id=" + currentLiteratureId + @")
-    union all
-    select
-        'legacy' as source_type,
-        s.id,
-        s.id as source_service_log_id,
-        s.info_ as comment_text,
-        s.addtime,
-        s.userid,
-        s.uptime as sort_time
-    from ServiceLog_List s
-    where s.name like N'[[]文献评论]%'
-      and s.info_ like N'%" + safeUrl + @"%'
-      and s.status in (1,2)
-      and not exists(select 1 from LiteratureComment lc where lc.source_service_log_id=s.id)
-) t
-order by sort_time desc,addtime desc,id desc";
+select top 50 id,content as comment_text,addtime,userid
+from LiteratureComment
+where parent_id=0
+  and is_deleted=0
+  and status=1
+  and (canonical_literature_id=" + currentLiteratureId + @" or literature_id=" + currentLiteratureId + @")
+order by updatetime desc,addtime desc,id desc";
             DataTable commentDt = literatureCommentBll.GetDatatable(sql);
 
             StringBuilder html = new StringBuilder();
@@ -1094,23 +1299,16 @@ order by sort_time desc,addtime desc,id desc";
                 {
                     int userId = Function.ConvertTo<int>(Convert.ToString(row["userid"]), 0);
                     int commentId = Function.ConvertTo<int>(Convert.ToString(row["id"]), 0);
-                    int serviceLogId = Function.ConvertTo<int>(Convert.ToString(row["source_service_log_id"]), 0);
-                    string sourceType = Convert.ToString(row["source_type"]);
                     user_list commentUser = userBll.SelectSingle("id=" + userId);
                     string userName = GetDisplayUserName(commentUser, userId);
                     string avatar = commentUser != null && commentUser.id > 0
                         ? CommonUserFunc.GetUserAvatarFunc(commentUser.upload_pic_avatar)
                         : "/images/touxiang1.png";
-                    string rawCommentText = Convert.ToString(row["comment_text"]);
-                    string commentText = sourceType == "legacy"
-                        ? ExtractLiteratureCommentText(rawCommentText)
-                        : Function.HtmlDiscode(rawCommentText);
+                    string commentText = Function.HtmlDiscode(Convert.ToString(row["comment_text"]));
                     DateTime addtime = Function.ConvertTo<DateTime>(Convert.ToString(row["addtime"]), DateTime.MinValue);
 
                     html.Append("<article class=\"lit-comment-item\" data-comment-id=\"");
                     html.Append(commentId);
-                    html.Append("\" data-comment-source=\"");
-                    html.Append(Server.HtmlEncode(sourceType));
                     html.Append("\">");
                     html.Append("<div class=\"lit-comment-main\"><img class=\"lit-comment-avatar\" src=\"");
                     html.Append(Server.HtmlEncode(avatar));
@@ -1128,7 +1326,7 @@ order by sort_time desc,addtime desc,id desc";
                     html.Append("</div><div class=\"lit-comment-text\">");
                     html.Append(FormatPublicText(commentText));
                     html.Append("</div>");
-                    html.Append(sourceType == "legacy" ? GetAdminReplyHtml(serviceLogId) : GetLiteratureCommentReplyHtml(commentId));
+                    html.Append(GetLiteratureCommentReplyHtml(commentId));
                     html.Append("</div></div></article>");
                 }
                 html.Append("</div>");
@@ -1141,7 +1339,6 @@ order by sort_time desc,addtime desc,id desc";
             }
             return html.ToString();
         }
-
         private string GetLiteratureCommentReplyHtml(int parentCommentId)
         {
             DataTable replyDt = literatureCommentBll.GetDatatable(
@@ -1175,42 +1372,6 @@ order by sort_time desc,addtime desc,id desc";
             replyDt.Dispose();
             return html.ToString();
         }
-
-        private string GetAdminReplyHtml(int serviceLogId)
-        {
-            DataTable replyDt = serviceLogInfoBll.GetDatatable("select info_, addtime, adminname from ServiceLogInfo_List where ServiceLog_Id=" + serviceLogId + " and type=2 order by addtime asc, id asc");
-            if (replyDt == null || replyDt.Rows.Count == 0)
-            {
-                if (replyDt != null)
-                {
-                    replyDt.Dispose();
-                }
-                return string.Empty;
-            }
-
-            StringBuilder html = new StringBuilder();
-            html.Append("<div class=\"lit-comment-replies\">");
-            foreach (DataRow reply in replyDt.Rows)
-            {
-                string adminName = Function.HtmlDiscode(Convert.ToString(reply["adminname"]));
-                if (string.IsNullOrWhiteSpace(adminName))
-                {
-                    adminName = "管理员";
-                }
-                DateTime addtime = Function.ConvertTo<DateTime>(Convert.ToString(reply["addtime"]), DateTime.MinValue);
-                html.Append("<div class=\"lit-comment-reply\"><div class=\"lit-comment-reply-head\"><strong>");
-                html.Append(Server.HtmlEncode(adminName));
-                html.Append("</strong><span>");
-                html.Append(addtime == DateTime.MinValue ? string.Empty : addtime.ToString("yyyy-MM-dd HH:mm"));
-                html.Append("</span></div><div class=\"lit-comment-reply-text\">");
-                html.Append(FormatPublicText(Function.HtmlDiscode(Convert.ToString(reply["info_"]))));
-                html.Append("</div></div>");
-            }
-            html.Append("</div>");
-            replyDt.Dispose();
-            return html.ToString();
-        }
-
         private string GetDisplayUserName(user_list user, int userId)
         {
             if (user != null && user.id > 0)
@@ -1228,21 +1389,6 @@ order by sort_time desc,addtime desc,id desc";
             }
             return userId > 0 ? "用户 " + userId : "匿名用户";
         }
-
-        private string ExtractLiteratureCommentText(string rawInfo)
-        {
-            string info = Function.HtmlDiscode(rawInfo);
-            string marker = "评论内容：";
-            int index = info.IndexOf(marker, StringComparison.Ordinal);
-            if (index >= 0)
-            {
-                info = info.Substring(index + marker.Length);
-            }
-            info = Regex.Replace(info, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
-            info = Regex.Replace(info, "<.*?>", string.Empty);
-            return Function.HtmlDiscode(info).Trim();
-        }
-
         private string FormatPublicText(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -1273,3 +1419,4 @@ order by sort_time desc,addtime desc,id desc";
         }
     }
 }
+

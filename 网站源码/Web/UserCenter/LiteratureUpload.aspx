@@ -9,6 +9,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>&#25991;&#29486;&#25237;&#31295;</title>
     <LiteratureManager:css ID="css" runat="server" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.6/dist/vis-network.min.css" />
+    <link rel="stylesheet" href="/css/literature-graph.css" />
     <style>
         .lit-upload-page { padding: 38px 0 72px; background: #f5f8fc; min-height: calc(100vh - 130px); }
         .lit-upload-shell { width: 1120px; max-width: calc(100vw - 40px); margin: 0 auto; }
@@ -34,6 +36,14 @@
         .lit-upload-actions .btn-primary { background: #1d6fdc; color: #fff; }
         .lit-upload-actions .btn-secondary { background: #eef5ff; color: #1d6fdc; margin-left: 12px; }
         .lit-upload-hint { color: #7a8795; font-size: 13px; margin-top: 8px; }
+        .lit-author-match-panel { display: none; padding: 16px; border: 1px solid #dce7f3; border-radius: 14px; background: rgba(255,255,255,.54); }
+        .lit-author-match-list { display: grid; gap: 10px; }
+        .lit-author-match-row { display: grid; grid-template-columns: minmax(150px, 220px) minmax(240px, 1fr) 96px; gap: 10px; align-items: start; }
+        .lit-author-match-name, .lit-author-match-affiliation { width: 100%; border: 1px solid #d7e0ea; border-radius: 12px; padding: 9px 12px; font-size: 14px; box-sizing: border-box; background: #fff; }
+        .lit-author-match-affiliation { min-height: 44px; resize: vertical; }
+        .lit-author-match-status { min-height: 36px; line-height: 36px; border-radius: 999px; background: #eef5ff; color: #1d6fdc; text-align: center; font-size: 12px; font-weight: 700; }
+        .lit-author-match-status.unmatched { background: #fff4e5; color: #a86500; }
+        .lit-author-match-empty { color: #7a8795; font-size: 13px; }
         .lit-batch-drop { display: grid; gap: 12px; padding: 24px; border: 1px dashed #d2d2d7; border-radius: 18px; background: #fafafc; }
         .lit-batch-drop strong { color: #1d1d1f; font-size: 17px; line-height: 1.24; }
         .lit-batch-drop input[type="file"] { width: 100%; color: #333; }
@@ -56,6 +66,7 @@
             .lit-upload-hero h1 { font-size: 28px; }
             .lit-upload-card { padding: 22px; }
             .lit-upload-grid { grid-template-columns: 1fr; }
+            .lit-author-match-row { grid-template-columns: 1fr; }
             .lit-upload-actions .btn-secondary { margin-left: 0; margin-top: 10px; }
         }
         body.ac .middle {
@@ -239,6 +250,7 @@
                 </div>
                 <form id="form1" runat="server">
                     <asp:HiddenField ID="batch_parse_payload" runat="server" />
+                    <asp:HiddenField ID="author_details_payload" runat="server" />
                             <div class="lit-upload-card lit-upload-panel active" id="singleUploadPanel">
                                 <div class="lit-upload-title">
                                     <h4>&#22522;&#26412;&#20449;&#24687;</h4>
@@ -260,6 +272,12 @@
                                         <label>&#20316;&#32773;&#21333;&#20301;</label>
                                         <asp:TextBox ID="institution" runat="server" CssClass="lit-upload-input"></asp:TextBox>
                                     </div>
+                                </div>
+
+                                <div class="lit-upload-row lit-author-match-panel" id="authorMatchPanel">
+                                    <label>作者与机构匹配结果</label>
+                                    <div class="lit-author-match-list" id="authorMatchList"></div>
+                                    <div class="lit-upload-hint">解析后可在这里核对并修改每位作者对应机构，提交时会按这里的结果保存。</div>
                                 </div>
 
                                 <div class="lit-upload-row">
@@ -298,9 +316,20 @@
                                 </div>
 
                                 <div class="lit-upload-grid">
+                                    <div class="lit-upload-grid">
+                                        <div class="lit-upload-row">
+                                            <label>发表年份</label>
+                                            <asp:TextBox ID="publish_year" runat="server" CssClass="lit-upload-input"></asp:TextBox>
+                                        </div>
+                                        <div class="lit-upload-row">
+                                            <label>发表月份</label>
+                                            <asp:TextBox ID="publish_month" runat="server" CssClass="lit-upload-input"></asp:TextBox>
+                                        </div>
+                                    </div>
                                     <div class="lit-upload-row">
-                                        <label>&#21457;&#34920;&#24180;&#20221;</label>
-                                        <asp:TextBox ID="publish_year" runat="server" CssClass="lit-upload-input"></asp:TextBox>
+                                        <label>发表日期</label>
+                                        <asp:TextBox ID="publish_day" runat="server" CssClass="lit-upload-input"></asp:TextBox>
+                                        <div class="lit-upload-hint">原文只有年份时可只填年份；能确认月份或日期时请一并填写。</div>
                                     </div>
                                     <div class="lit-upload-row">
                                         <label>&#20851;&#38190;&#35789;</label>
@@ -348,7 +377,7 @@
                                 </div>
 
                                 <div class="lit-upload-actions">
-                                    <asp:Button ID="ButtonSubmit" runat="server" CssClass="btn btn-primary" Text="&#25552;&#20132;&#23457;&#26680;" OnClick="ButtonSubmit_Click" />
+                                    <asp:Button ID="ButtonSubmit" runat="server" CssClass="btn btn-primary" Text="&#25552;&#20132;&#23457;&#26680;" OnClientClick="return collectAuthorDetails();" OnClick="ButtonSubmit_Click" />
                                     <a href="/LiteratureSearch.aspx" class="btn btn-secondary">&#36820;&#22238;&#26816;&#32034;</a>
                                 </div>
                             </div>
@@ -397,10 +426,33 @@
                                 </div>
                             </div>
                 </form>
+                <div class="lit-upload-card literature-graph-widget" data-api="/Inc/LiteratureGraph.ashx">
+                    <div class="literature-graph-head">
+                        <div class="literature-graph-title">
+                            <h4>Literature Graph</h4>
+                            <p>展示已审核文献以及您本次提交后待审核的文献关系，包含文献、作者、分类和期刊会议等关联节点。</p>
+                        </div>
+                        <div class="literature-graph-status">正在读取文献关系...</div>
+                    </div>
+                    <div class="literature-graph-body">
+                        <div class="literature-graph-main">
+                            <div class="literature-graph-tools" aria-label="图谱工具">
+                                <button type="button" data-graph-action="fit" title="适配视图">◎</button>
+                                <button type="button" data-graph-action="zoom-in" title="放大">+</button>
+                                <button type="button" data-graph-action="zoom-out" title="缩小">-</button>
+                            </div>
+                            <div class="literature-graph-canvas"></div>
+                            <div class="literature-graph-empty">暂无可展示的文献关系数据。</div>
+                        </div>
+                        <div class="literature-graph-panel"></div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
     <LiteratureManager:foot ID="foot" runat="server" />
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.6/dist/vis-network.min.js"></script>
+    <script src="/js/literature-graph.js"></script>
     <script type="text/javascript">
         function switchUploadMode(mode) {
             var singlePanel = document.getElementById("singleUploadPanel");
@@ -411,6 +463,174 @@
             }
             if (singlePanel) singlePanel.className = mode === "single" ? "lit-upload-card lit-upload-panel active" : "lit-upload-card lit-upload-panel";
             if (batchPanel) batchPanel.className = mode === "batch" ? "lit-upload-card lit-upload-panel active" : "lit-upload-card lit-upload-panel";
+        }
+
+        function escapeHtmlValue(value) {
+            return String(value || "").replace(/[&<>"']/g, function (ch) {
+                return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[ch];
+            });
+        }
+
+        function containsChineseClient(value) {
+            return /[\u3400-\u9fff\uf900-\ufaff]/.test(value || "");
+        }
+
+        function splitAffiliationValues(value) {
+            var parts = String(value || "").split(/[;；|\n\r]+/);
+            var result = [];
+            for (var i = 0; i < parts.length; i++) {
+                var current = parts[i].replace(/\s+/g, " ").trim();
+                if (current && result.indexOf(current) < 0) {
+                    result.push(current);
+                }
+            }
+            return result;
+        }
+
+        function normalizeAuthorDetails(details) {
+            var result = [];
+            if (!details || !details.length) return result;
+            for (var i = 0; i < details.length; i++) {
+                var item = details[i];
+                var name = "";
+                var affiliations = [];
+                var markers = [];
+                var status = "";
+                if (typeof item === "string") {
+                    name = item;
+                } else if (item) {
+                    name = item.name || item.name_cn || item.name_en || "";
+                    if (item.affiliations && item.affiliations.length) {
+                        for (var j = 0; j < item.affiliations.length; j++) {
+                            var aff = String(item.affiliations[j] || "").replace(/\s+/g, " ").trim();
+                            if (aff && affiliations.indexOf(aff) < 0) affiliations.push(aff);
+                        }
+                    }
+                    if (affiliations.length === 0 && item.affiliation_text) {
+                        affiliations = splitAffiliationValues(item.affiliation_text);
+                    }
+                    if (item.markers && item.markers.length) {
+                        for (var k = 0; k < item.markers.length; k++) {
+                            markers.push(String(item.markers[k]));
+                        }
+                    }
+                    status = item.mapping_status || "";
+                }
+                name = String(name || "").replace(/\s+/g, " ").trim();
+                if (!name) continue;
+                result.push({
+                    name: name,
+                    name_cn: containsChineseClient(name) ? name : "",
+                    name_en: containsChineseClient(name) ? "" : name,
+                    affiliations: affiliations,
+                    affiliation_text: affiliations.join("; "),
+                    markers: markers,
+                    mapping_status: status || (affiliations.length ? "matched" : "unmatched")
+                });
+            }
+            return result;
+        }
+
+        function setAuthorDetailsPayload(details) {
+            var input = document.getElementById("<%= author_details_payload.ClientID %>");
+            if (!input) return;
+            try {
+                input.value = details && details.length ? JSON.stringify(details) : "";
+            } catch (e) {
+                input.value = "";
+            }
+        }
+
+        function renderAuthorMatchEditor(details) {
+            var panel = document.getElementById("authorMatchPanel");
+            var list = document.getElementById("authorMatchList");
+            if (!panel || !list) return;
+            var normalized = normalizeAuthorDetails(details);
+            list.innerHTML = "";
+            if (!normalized.length) {
+                panel.style.display = "none";
+                setAuthorDetailsPayload([]);
+                return;
+            }
+            panel.style.display = "block";
+            for (var i = 0; i < normalized.length; i++) {
+                var item = normalized[i];
+                var row = document.createElement("div");
+                var matched = item.affiliations && item.affiliations.length > 0;
+                row.className = "lit-author-match-row";
+                row.setAttribute("data-markers", JSON.stringify(item.markers || []));
+                row.innerHTML =
+                    "<input type=\"text\" class=\"lit-author-match-name\" data-author-match-name=\"1\" value=\"" + escapeHtmlValue(item.name) + "\" />" +
+                    "<textarea class=\"lit-author-match-affiliation\" data-author-match-affiliation=\"1\">" + escapeHtmlValue(item.affiliation_text || "") + "</textarea>" +
+                    "<span class=\"lit-author-match-status" + (matched ? "" : " unmatched") + "\">" + (matched ? "已匹配" : "未匹配") + "</span>";
+                list.appendChild(row);
+            }
+            setAuthorDetailsPayload(normalized);
+        }
+
+        function collectAuthorDetails() {
+            var list = document.getElementById("authorMatchList");
+            if (!list) return true;
+            var rows = list.querySelectorAll(".lit-author-match-row");
+            if (!rows.length) return true;
+            var details = [];
+            for (var i = 0; i < rows.length; i++) {
+                var nameInput = rows[i].querySelector("[data-author-match-name]");
+                var affInput = rows[i].querySelector("[data-author-match-affiliation]");
+                var name = nameInput ? nameInput.value.replace(/\s+/g, " ").trim() : "";
+                if (!name) continue;
+                var affiliations = splitAffiliationValues(affInput ? affInput.value : "");
+                var markers = [];
+                try {
+                    markers = JSON.parse(rows[i].getAttribute("data-markers") || "[]");
+                } catch (e) {
+                    markers = [];
+                }
+                details.push({
+                    name: name,
+                    name_cn: containsChineseClient(name) ? name : "",
+                    name_en: containsChineseClient(name) ? "" : name,
+                    affiliations: affiliations,
+                    affiliation_text: affiliations.join("; "),
+                    markers: markers,
+                    mapping_status: affiliations.length ? "matched" : "unmatched"
+                });
+            }
+            setAuthorDetailsPayload(details);
+            return true;
+        }
+
+        function formatAuthorDetailsText(details) {
+            var normalized = normalizeAuthorDetails(details);
+            var lines = [];
+            for (var i = 0; i < normalized.length; i++) {
+                lines.push(normalized[i].name + " => " + (normalized[i].affiliation_text || ""));
+            }
+            return lines.join("\n");
+        }
+
+        function parseAuthorDetailsText(value) {
+            var lines = String(value || "").split(/\r?\n/);
+            var result = [];
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (!line) continue;
+                var match = line.match(/^(.*?)\s*(?:=>|->|：|:)\s*(.*)$/);
+                var name = match ? match[1].trim() : line;
+                var affiliationText = match ? match[2].trim() : "";
+                if (!name) continue;
+                var affiliations = splitAffiliationValues(affiliationText);
+                result.push({
+                    name: name,
+                    name_cn: containsChineseClient(name) ? name : "",
+                    name_en: containsChineseClient(name) ? "" : name,
+                    affiliations: affiliations,
+                    affiliation_text: affiliations.join("; "),
+                    markers: [],
+                    mapping_status: affiliations.length ? "matched" : "unmatched"
+                });
+            }
+            return result;
         }
 
         function collectBatchDetails() {
@@ -430,12 +650,15 @@
                     journal_name: getBatchField(cards[i], "journal_name"),
                     conference_name: getBatchField(cards[i], "conference_name"),
                     publish_year: getBatchField(cards[i], "publish_year"),
+                    publish_month: getBatchField(cards[i], "publish_month"),
+                    publish_day: getBatchField(cards[i], "publish_day"),
                     volume: getBatchField(cards[i], "volume"),
                     issue: getBatchField(cards[i], "issue"),
                     pages: getBatchField(cards[i], "pages"),
                     publisher: getBatchField(cards[i], "publisher"),
                     keywords: getBatchField(cards[i], "keywords"),
-                    abstract_text: getBatchField(cards[i], "abstract_text")
+                    abstract_text: getBatchField(cards[i], "abstract_text"),
+                    author_details: getBatchAuthorDetails(cards[i])
                 });
             }
             if (payloadInput) {
@@ -449,6 +672,19 @@
             return el ? el.value : "";
         }
 
+        function getBatchAuthorDetails(card) {
+            var edited = getBatchField(card, "author_details_text");
+            var parsed = parseAuthorDetailsText(edited);
+            if (parsed.length) return parsed;
+            var raw = card ? card.getAttribute("data-author-details") : "";
+            if (!raw) return [];
+            try {
+                return JSON.parse(raw);
+            } catch (e) {
+                return [];
+            }
+        }
+
         function clearBatchFiles() {
             if (window.resetBatchFileStore) {
                 window.resetBatchFileStore();
@@ -460,6 +696,16 @@
                 var el = document.getElementById(id);
                 if (el && value) {
                     el.value = value;
+                }
+            }
+
+            function setJson(id, value) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                try {
+                    el.value = value ? JSON.stringify(value) : "";
+                } catch (e) {
+                    el.value = "";
                 }
             }
 
@@ -518,6 +764,8 @@
                     setText("<%= institution.ClientID %>", data.institution);
                     setText("<%= doi.ClientID %>", data.doi);
                     setText("<%= publish_year.ClientID %>", data.publish_year);
+                    setText("<%= publish_month.ClientID %>", data.publish_month);
+                    setText("<%= publish_day.ClientID %>", data.publish_day);
                     setText("<%= journal_name.ClientID %>", data.journal_name);
                     setText("<%= conference_name.ClientID %>", data.conference_name);
                     setText("<%= volume.ClientID %>", data.volume);
@@ -526,6 +774,8 @@
                     setText("<%= publisher.ClientID %>", data.publisher);
                     setText("<%= keywords.ClientID %>", data.keywords);
                     setText("<%= abstract_text.ClientID %>", data.abstract_text);
+                    setJson("<%= author_details_payload.ClientID %>", data.author_details || data.authors || []);
+                    renderAuthorMatchEditor(data.author_details || data.authors || []);
                     if (data.source_type) {
                         var source = document.getElementById("<%= source_type.ClientID %>");
                         if (source) {
@@ -604,6 +854,7 @@
                     fieldHtml("作者", "author_names", "", false) +
                     fieldHtml("作者单位", "institution", "", false) +
                     "</div>" +
+                    fieldHtml("作者与机构匹配（每行：作者 => 机构）", "author_details_text", "", true) +
                     fieldHtml("DOI", "doi", "", false) +
                     "<div class=\"lit-upload-grid\"><div class=\"lit-upload-row\"><label>文献类型</label><select class=\"lit-upload-select\" data-batch-field=\"source_type\">" + sourceOptions + "</select></div><div class=\"lit-upload-row\"><label>分类</label><select class=\"lit-upload-select\" data-batch-field=\"category_id\">" + categoryOptions + "</select></div></div>" +
                     "<div class=\"lit-upload-grid\">" +
@@ -612,6 +863,8 @@
                     "</div>" +
                     "<div class=\"lit-upload-grid\">" +
                     fieldHtml("发表年份", "publish_year", "", false) +
+                    fieldHtml("发表月份", "publish_month", "", false) +
+                    fieldHtml("发表日期", "publish_day", "", false) +
                     fieldHtml("关键词", "keywords", "", false) +
                     "</div>" +
                     "<div class=\"lit-upload-grid\">" +
@@ -644,11 +897,21 @@
             }
 
             function applyParsedData(row, data) {
+                var authorDetails = (data && (data.author_details || data.authors)) || [];
+                if (row) {
+                    try {
+                        row.setAttribute("data-author-details", JSON.stringify(authorDetails));
+                    } catch (e) {
+                        row.setAttribute("data-author-details", "[]");
+                    }
+                }
                 setCardField(row, "title", data.title);
                 setCardField(row, "author_names", data.author_names);
                 setCardField(row, "institution", data.institution);
                 setCardField(row, "doi", data.doi);
                 setCardField(row, "publish_year", data.publish_year);
+                setCardField(row, "publish_month", data.publish_month);
+                setCardField(row, "publish_day", data.publish_day);
                 setCardField(row, "journal_name", data.journal_name);
                 setCardField(row, "conference_name", data.conference_name);
                 setCardField(row, "volume", data.volume);
@@ -657,6 +920,7 @@
                 setCardField(row, "publisher", data.publisher);
                 setCardField(row, "keywords", data.keywords);
                 setCardField(row, "abstract_text", data.abstract_text);
+                setCardField(row, "author_details_text", formatAuthorDetailsText(authorDetails));
                 setCardField(row, "source_type", data.source_type);
             }
 

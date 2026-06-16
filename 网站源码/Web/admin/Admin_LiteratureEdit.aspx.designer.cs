@@ -11,6 +11,9 @@ namespace Web.admin
         protected global::Web.admin.Inc Inc2;
         protected global::Web.admin.class_menu class_menu;
         protected global::System.Web.UI.HtmlControls.HtmlForm form2;
+        protected global::System.Web.UI.WebControls.HiddenField author_details_payload;
+        protected global::System.Web.UI.WebControls.HiddenField journal_id_payload;
+        protected global::System.Web.UI.WebControls.HiddenField conference_id_payload;
         protected global::System.Web.UI.WebControls.Panel AddUp;
         protected global::System.Web.UI.WebControls.Label Txt_Title;
         protected global::System.Web.UI.WebControls.TextBox title;
@@ -20,6 +23,8 @@ namespace Web.admin
         protected global::System.Web.UI.WebControls.TextBox doi;
         protected global::System.Web.UI.WebControls.TextBox download_points;
         protected global::System.Web.UI.WebControls.TextBox publish_year;
+        protected global::System.Web.UI.WebControls.TextBox publish_month;
+        protected global::System.Web.UI.WebControls.TextBox publish_day;
         protected global::System.Web.UI.WebControls.DropDownList source_type;
         protected global::System.Web.UI.WebControls.DropDownList category_id;
         protected global::System.Web.UI.WebControls.TextBox journal_name;

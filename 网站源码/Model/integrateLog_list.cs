@@ -77,24 +77,6 @@ namespace Model
             set { _adminname = value; }
             get { return _adminname; }
         }
-        private long? _resource_id;
-        /// <summary>
-        /// 
-        /// </summary>
-        public long? resource_id
-        {
-            set { _resource_id = value; }
-            get { return _resource_id; }
-        }
-        private long? _resource_data_id;
-        /// <summary>
-        /// 
-        /// </summary>
-        public long? resource_data_id
-        {
-            set { _resource_data_id = value; }
-            get { return _resource_data_id; }
-        }
 
         private int? _literature_id;
         /// <summary>

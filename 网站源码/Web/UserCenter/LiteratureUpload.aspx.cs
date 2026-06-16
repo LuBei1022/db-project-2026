@@ -2,6 +2,7 @@
 using BLL;
 using Model;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -89,10 +90,11 @@ namespace Web.UserCenter
             literature.issue = Function.HtmlEncode(issue.Text.Trim());
             literature.pages = Function.HtmlEncode(pages.Text.Trim());
             literature.publisher = Function.HtmlEncode(publisher.Text.Trim());
-            literature.publish_year = Function.ConvertTo<int>(publish_year.Text.Trim(), 0);
-            if (literature.publish_year <= 0)
+            string publishDateError = ApplyPublicationDate(literature, publish_year.Text, publish_month.Text, publish_day.Text);
+            if (!string.IsNullOrWhiteSpace(publishDateError))
             {
-                literature.publish_year = null;
+                Function.Show_Msg(publishDateError, "/User/LiteratureUpload");
+                return;
             }
             literature.keywords = Function.HtmlEncode(keywords.Text.Trim());
             literature.abstract_text = Function.HtmlEncode(abstract_text.Text.Trim());
@@ -127,12 +129,12 @@ namespace Web.UserCenter
             if (literatureId > 0)
             {
                 literature.id = literatureId;
-                LiteratureRelationSync.Sync(literature, author_names.Text.Trim(), string.Empty, uploadedPdfPath, uploadedPdfName);
+                LiteratureRelationSync.Sync(literature, author_names.Text.Trim(), string.Empty, uploadedPdfPath, uploadedPdfName, author_details_payload.Value);
                 LiteratureVenueProfileSync.EnsureForLiterature(literature);
                 string successMessage = platformDuplicateMasterId > 0
                     ? "\u5E73\u53F0\u5DF2\u5B58\u5728\u8FD9\u7BC7\u6587\u732E\uFF0C\u672C\u6B21\u63D0\u4EA4\u5DF2\u8FDB\u5165\u540E\u53F0\u5BA1\u6838\uFF0C\u5BA1\u6838\u901A\u8FC7\u540E\u5C06\u5171\u7528\u5DF2\u6709\u8BE6\u60C5\u9875\u3002"
                     : "\u6587\u732E\u5DF2\u63D0\u4EA4\uFF0C\u8BF7\u7B49\u5F85\u540E\u53F0\u5BA1\u6838\u901A\u8FC7\u540E\u5C55\u793A\uFF01";
-                Function.Show_Msg(successMessage, "/User/Center");
+                Function.Show_Msg(successMessage, "/User/LiteratureUpload?graph=1");
             }
             else
             {
@@ -220,6 +222,9 @@ namespace Web.UserCenter
                 string parsedPublisher = parsed == null ? string.Empty : (parsed.publisher ?? string.Empty);
                 string parsedKeywords = parsed == null ? string.Empty : (parsed.keywords ?? string.Empty);
                 string parsedAbstract = parsed == null ? string.Empty : (parsed.abstract_text ?? string.Empty);
+                string parsedPublishMonth = parsed == null ? string.Empty : (parsed.publish_month ?? string.Empty);
+                string parsedPublishDay = parsed == null ? string.Empty : (parsed.publish_day ?? string.Empty);
+                string parsedAuthorDetails = parsed == null || parsed.author_details == null ? string.Empty : parsed.author_details.ToString(Formatting.None);
 
                 Literature literature = new Literature();
                 literature.title = Function.HtmlEncode(string.IsNullOrWhiteSpace(parsedTitle) ? titleFromFile.Trim() : parsedTitle.Trim());
@@ -234,10 +239,11 @@ namespace Web.UserCenter
                 literature.issue = Function.HtmlEncode(parsedIssue.Trim());
                 literature.pages = Function.HtmlEncode(parsedPages.Trim());
                 literature.publisher = Function.HtmlEncode(parsedPublisher.Trim());
-                literature.publish_year = Function.ConvertTo<int>(parsedPublishYear.Trim(), 0);
-                if (literature.publish_year <= 0)
+                string parsedPublishError = ApplyPublicationDate(literature, parsedPublishYear, parsedPublishMonth, parsedPublishDay);
+                if (!string.IsNullOrWhiteSpace(parsedPublishError))
                 {
-                    literature.publish_year = null;
+                    failCount++;
+                    continue;
                 }
                 literature.keywords = Function.HtmlEncode(parsedKeywords.Trim());
                 literature.abstract_text = Function.HtmlEncode(parsedAbstract.Trim());
@@ -272,7 +278,7 @@ namespace Web.UserCenter
                 if (literatureId > 0)
                 {
                     literature.id = literatureId;
-                    LiteratureRelationSync.Sync(literature, parsedAuthorNames, string.Empty, uploadedPdfPath, uploadedPdfName);
+                    LiteratureRelationSync.Sync(literature, parsedAuthorNames, string.Empty, uploadedPdfPath, uploadedPdfName, parsedAuthorDetails);
                     LiteratureVenueProfileSync.EnsureForLiterature(literature);
                     if (platformDuplicateMasterId > 0)
                     {
@@ -302,7 +308,7 @@ namespace Web.UserCenter
                     message += "\uFF0C" + failCount + " \u4E2A\u6587\u4EF6\u672A\u6210\u529F";
                 }
                 message += "\uFF0C\u8BF7\u7B49\u5F85\u540E\u53F0\u5BA1\u6838\uFF01";
-                Function.Show_Msg(message, "/User/Center");
+                Function.Show_Msg(message, "/User/LiteratureUpload?graph=1");
             }
             else
             {
@@ -320,6 +326,68 @@ namespace Web.UserCenter
             int targetId = GetCanonicalLiteratureId(duplicate);
             string url = "/LiteratureInfo.aspx?id=" + (targetId > 0 ? targetId : duplicate.id);
             Function.Show_Msg("\u60A8\u5DF2\u4E0A\u4F20\u8FC7\u8FD9\u7BC7\u6587\u732E\uFF0C\u540C\u4E00\u7528\u6237\u4E0D\u80FD\u91CD\u590D\u4E0A\u4F20\u540C\u4E00\u7BC7\u6587\u7AE0\u3002", url);
+        }
+
+        private string ApplyPublicationDate(Literature literature, string yearText, string monthText, string dayText)
+        {
+            int year = Function.ConvertTo<int>((yearText ?? string.Empty).Trim(), 0);
+            int month = Function.ConvertTo<int>((monthText ?? string.Empty).Trim(), 0);
+            int day = Function.ConvertTo<int>((dayText ?? string.Empty).Trim(), 0);
+
+            if (year <= 0)
+            {
+                if (month > 0 || day > 0)
+                {
+                    return "填写发表月份或日期时必须同时填写发表年份。";
+                }
+                literature.publish_year = null;
+                literature.publish_month = null;
+                literature.publish_day = null;
+                literature.publish_date = null;
+                literature.publish_date_precision = "unknown";
+                return string.Empty;
+            }
+            if (year < 1000 || year > 9999)
+            {
+                return "发表年份格式不正确。";
+            }
+            if (month < 0 || month > 12)
+            {
+                return "发表月份必须在 1-12 之间。";
+            }
+            if (month == 0 && day > 0)
+            {
+                return "填写发表日期时必须同时填写发表月份。";
+            }
+            if (day < 0 || day > 31)
+            {
+                return "发表日期格式不正确。";
+            }
+
+            literature.publish_year = year;
+            literature.publish_month = month > 0 ? (int?)month : null;
+            literature.publish_day = null;
+            literature.publish_date = new DateTime(year, 12, 31);
+            literature.publish_date_precision = "year";
+
+            if (month > 0)
+            {
+                int maxDay = DateTime.DaysInMonth(year, month);
+                if (day > maxDay)
+                {
+                    return "发表日期超过该月份最大天数。";
+                }
+                literature.publish_date = new DateTime(year, month, maxDay);
+                literature.publish_date_precision = "month";
+                if (day > 0)
+                {
+                    literature.publish_day = day;
+                    literature.publish_date = new DateTime(year, month, day);
+                    literature.publish_date_precision = "day";
+                }
+            }
+
+            return string.Empty;
         }
 
         private Literature FindDuplicateLiterature(string rawTitle, string rawDoi, int userId)
@@ -545,6 +613,8 @@ namespace Web.UserCenter
             public string institution { get; set; }
             public string doi { get; set; }
             public string publish_year { get; set; }
+            public string publish_month { get; set; }
+            public string publish_day { get; set; }
             public string journal_name { get; set; }
             public string conference_name { get; set; }
             public string volume { get; set; }
@@ -555,6 +625,7 @@ namespace Web.UserCenter
             public string abstract_text { get; set; }
             public string source_type { get; set; }
             public string category_id { get; set; }
+            public JArray author_details { get; set; }
         }
     }
 }

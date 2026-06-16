@@ -58,88 +58,14 @@ namespace Web.admin
             try
             {
                 tempPath = SaveTempFile(context, file);
-                JObject parsed = TryParseByApp(tempPath) ?? TryParseByPython(context, tempPath);
-                if (parsed == null)
+                JObject parsedResult = ParsePdfMetadata(context, tempPath);
+                if (parsedResult == null)
                 {
                     WriteJson(context, new { success = false, message = "\u672A\u80FD\u4ECE PDF \u4E2D\u89E3\u6790\u51FA\u6587\u732E\u4FE1\u606F" });
                     return;
                 }
 
-                string title = GetJsonString(parsed, "title");
-                string authorNames = JoinArray(parsed, "authors", ", ");
-                string institution = NormalizeParsedInstitution(JoinArray(parsed, "institutions", "\uFF1B"));
-                string journalRaw = GetJsonString(parsed, "journal");
-                string conferenceRaw = GetJsonString(parsed, "conference");
-                string sourceTypeRaw = GetJsonString(parsed, "source_type");
-                string doi = GetJsonString(parsed, "doi");
-                string publishYear = GetJsonString(parsed, "publish_year");
-                string volume = GetJsonString(parsed, "volume");
-                string issue = GetJsonString(parsed, "issue");
-                string pages = GetJsonString(parsed, "pages");
-                string pageCount = GetJsonString(parsed, "page_count");
-                string publisher = GetJsonString(parsed, "publisher");
-                string keywords = JoinArray(parsed, "keywords", ", ");
-                string abstractText = GetJsonString(parsed, "abstract");
-
-                string journalName = string.Empty;
-                string conferenceName = string.Empty;
-                string sourceType = "\u5176\u4ED6";
-                if (!string.IsNullOrWhiteSpace(journalRaw))
-                {
-                    journalName = journalRaw;
-                    sourceType = "\u671F\u520A\u8BBA\u6587";
-                }
-                else if (!string.IsNullOrWhiteSpace(conferenceRaw))
-                {
-                    if (LooksLikeJournal(conferenceRaw))
-                    {
-                        journalName = conferenceRaw;
-                        sourceType = "\u671F\u520A\u8BBA\u6587";
-                    }
-                    else
-                    {
-                        conferenceName = conferenceRaw;
-                        sourceType = "\u4F1A\u8BAE\u8BBA\u6587";
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(sourceTypeRaw))
-                {
-                    if (sourceTypeRaw.Contains("\u671F\u520A"))
-                    {
-                        sourceType = "\u671F\u520A\u8BBA\u6587";
-                    }
-                    else if (sourceTypeRaw.Contains("\u4F1A\u8BAE"))
-                    {
-                        sourceType = "\u4F1A\u8BAE\u8BBA\u6587";
-                    }
-                }
-
-                if (string.IsNullOrWhiteSpace(journalName) && !string.IsNullOrWhiteSpace(conferenceName))
-                {
-                    journalName = string.Empty;
-                }
-
-                WriteJson(context, new
-                {
-                    success = true,
-                    title = title,
-                    author_names = authorNames,
-                    institution = institution,
-                    doi = doi,
-                    publish_year = publishYear,
-                    volume = volume,
-                    issue = issue,
-                    pages = pages,
-                    page_count = pageCount,
-                    publisher = publisher,
-                    journal_name = journalName,
-                    conference_name = conferenceName,
-                    keywords = keywords,
-                    abstract_text = abstractText,
-                    source_type = sourceType,
-                    remark_append = string.IsNullOrWhiteSpace(institution) ? string.Empty : "\u4F5C\u8005\u5355\u4F4D\uFF1A" + institution
-                });
+                WriteJson(context, parsedResult);
             }
             catch (Exception ex)
             {
@@ -154,6 +80,174 @@ namespace Web.admin
                 }
                 parseLease.Dispose();
             }
+        }
+
+        public JObject ParsePdfMetadata(HttpContext context, string pdfPath)
+        {
+            JObject parsed = TryParseByApp(pdfPath);
+            if (parsed != null && ShouldMergePythonFallback(parsed))
+            {
+                JObject pythonParsed = TryParseByPython(context, pdfPath);
+                MergeMissingParsedFields(parsed, pythonParsed);
+            }
+            if (parsed == null)
+            {
+                parsed = TryParseByPython(context, pdfPath);
+            }
+            if (parsed == null)
+            {
+                return null;
+            }
+
+            string title = GetJsonString(parsed, "title");
+            string authorNames = JoinAuthorNames(parsed);
+            string institution = NormalizeParsedInstitution(JoinArray(parsed, "institutions", "\uFF1B"));
+            JArray authorDetails = BuildAuthorDetails(parsed, institution);
+            string journalRaw = GetJsonString(parsed, "journal");
+            string conferenceRaw = GetJsonString(parsed, "conference");
+            string sourceTypeRaw = GetJsonString(parsed, "source_type");
+            string doi = GetJsonString(parsed, "doi");
+            string publishYear = GetFirstJsonString(parsed, "publish_year", "publication_year", "pub_year", "year");
+            string publishMonth = GetFirstJsonString(parsed, "publish_month", "publication_month", "pub_month", "month");
+            string publishDay = GetFirstJsonString(parsed, "publish_day", "publication_day", "pub_day", "day");
+            string publishDatePrecision = GetFirstJsonString(parsed, "publish_date_precision", "publication_date_precision", "date_precision", "precision");
+            ApplyPublishDateFallbacks(parsed, doi, ref publishYear, ref publishMonth, ref publishDay, ref publishDatePrecision);
+            string volume = GetJsonString(parsed, "volume");
+            string issue = GetJsonString(parsed, "issue");
+            string pages = GetJsonString(parsed, "pages");
+            string pageCount = GetJsonString(parsed, "page_count");
+            string publisher = GetJsonString(parsed, "publisher");
+            string keywords = JoinArray(parsed, "keywords", ", ");
+            string abstractText = GetJsonString(parsed, "abstract");
+
+            string journalName = string.Empty;
+            string conferenceName = string.Empty;
+            string sourceType = "\u5176\u4ED6";
+            if (!string.IsNullOrWhiteSpace(journalRaw))
+            {
+                journalName = journalRaw;
+                sourceType = "\u671F\u520A\u8BBA\u6587";
+            }
+            else if (!string.IsNullOrWhiteSpace(conferenceRaw))
+            {
+                if (LooksLikeJournal(conferenceRaw))
+                {
+                    journalName = conferenceRaw;
+                    sourceType = "\u671F\u520A\u8BBA\u6587";
+                }
+                else
+                {
+                    conferenceName = conferenceRaw;
+                    sourceType = "\u4F1A\u8BAE\u8BBA\u6587";
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(sourceTypeRaw))
+            {
+                if (sourceTypeRaw.Contains("\u671F\u520A"))
+                {
+                    sourceType = "\u671F\u520A\u8BBA\u6587";
+                }
+                else if (sourceTypeRaw.Contains("\u4F1A\u8BAE"))
+                {
+                    sourceType = "\u4F1A\u8BAE\u8BBA\u6587";
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(journalName) && !string.IsNullOrWhiteSpace(conferenceName))
+            {
+                journalName = string.Empty;
+            }
+
+            return JObject.FromObject(new
+            {
+                success = true,
+                title = title,
+                author_names = authorNames,
+                authors = authorDetails,
+                author_details = authorDetails,
+                institution = institution,
+                doi = doi,
+                publish_year = publishYear,
+                publish_month = publishMonth,
+                publish_day = publishDay,
+                publish_date_precision = publishDatePrecision,
+                volume = volume,
+                issue = issue,
+                pages = pages,
+                page_count = pageCount,
+                publisher = publisher,
+                journal_name = journalName,
+                conference_name = conferenceName,
+                keywords = keywords,
+                abstract_text = abstractText,
+                source_type = sourceType,
+                remark_append = string.IsNullOrWhiteSpace(institution) ? string.Empty : "\u4F5C\u8005\u5355\u4F4D\uFF1A" + institution
+            });
+        }
+
+        private bool ShouldMergePythonFallback(JObject parsed)
+        {
+            if (parsed == null)
+            {
+                return true;
+            }
+
+            bool missingDoi = !HasAnyJsonValue(parsed, "doi", "DOI");
+            bool missingDate = !HasAnyJsonValue(parsed, "publish_year", "publication_year", "pub_year", "year", "publish_date", "publication_date", "published_date", "date");
+            return missingDoi || missingDate;
+        }
+
+        private bool HasAnyJsonValue(JObject obj, params string[] keys)
+        {
+            if (obj == null || keys == null)
+            {
+                return false;
+            }
+
+            foreach (string key in keys)
+            {
+                string value = GetJsonString(obj, key);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void MergeMissingParsedFields(JObject target, JObject fallback)
+        {
+            if (target == null || fallback == null)
+            {
+                return;
+            }
+
+            foreach (JProperty prop in fallback.Properties())
+            {
+                JToken existing = target[prop.Name];
+                if (existing == null || IsEmptyJsonToken(existing))
+                {
+                    target[prop.Name] = prop.Value.DeepClone();
+                }
+            }
+        }
+
+        private bool IsEmptyJsonToken(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+            {
+                return true;
+            }
+
+            JArray array = token as JArray;
+            if (array != null)
+            {
+                return array.Count == 0;
+            }
+
+            return string.IsNullOrWhiteSpace(token.ToString());
         }
 
         private bool IsAuthorizedRequest()
@@ -320,6 +414,508 @@ namespace Web.admin
         {
             JToken token = obj[key];
             return token == null ? string.Empty : CleanParsedText(token.ToString());
+        }
+
+        private string GetFirstJsonString(JObject obj, params string[] keys)
+        {
+            if (obj == null || keys == null)
+            {
+                return string.Empty;
+            }
+
+            foreach (string key in keys)
+            {
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                string value = GetJsonString(obj, key);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private void ApplyPublishDateFallbacks(JObject parsed, string doi, ref string year, ref string month, ref string day, ref string precision)
+        {
+            year = NormalizeYearValue(year);
+            month = NormalizeMonthValue(month);
+            day = NormalizeDayValue(day);
+            precision = NormalizePrecisionValue(precision, year, month, day);
+
+            if (!string.IsNullOrWhiteSpace(year))
+            {
+                return;
+            }
+
+            string dateText = GetFirstJsonString(
+                parsed,
+                "publish_date",
+                "publication_date",
+                "published_date",
+                "published",
+                "date",
+                "date_published",
+                "created",
+                "updated");
+            ApplyDateTextFallback(dateText, ref year, ref month, ref day, ref precision);
+
+            if (!string.IsNullOrWhiteSpace(year))
+            {
+                return;
+            }
+
+            ApplyDoiDateFallback(doi, ref year, ref month, ref day, ref precision);
+        }
+
+        private void ApplyDateTextFallback(string dateText, ref string year, ref string month, ref string day, ref string precision)
+        {
+            string text = CleanParsedText(dateText);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            Match match = Regex.Match(text, @"\b((?:19|20)\d{2})[-/.年]\s*(\d{1,2})(?:[-/.月]\s*(\d{1,2}))?", RegexOptions.IgnoreCase);
+            if (match.Success && SetDateParts(match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value, ref year, ref month, ref day, ref precision))
+            {
+                return;
+            }
+
+            string monthPattern = @"(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+            match = Regex.Match(text, monthPattern + @"\s+(\d{1,2},\s*)?((?:19|20)\d{2})", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                string monthValue = MonthNameToNumber(match.Groups[1].Value);
+                string dayValue = (match.Groups[2].Value ?? string.Empty).Trim(' ', ',');
+                if (SetDateParts(match.Groups[3].Value, monthValue, dayValue, ref year, ref month, ref day, ref precision))
+                {
+                    return;
+                }
+            }
+
+            match = Regex.Match(text, @"\b((?:19|20)\d{2})\s+" + monthPattern + @"(?:\s+(\d{1,2}))?\b", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                string monthValue = MonthNameToNumber(match.Groups[2].Value);
+                if (SetDateParts(match.Groups[1].Value, monthValue, match.Groups[3].Value, ref year, ref month, ref day, ref precision))
+                {
+                    return;
+                }
+            }
+
+            match = Regex.Match(text, @"\b((?:19|20)\d{2})\b");
+            if (match.Success)
+            {
+                year = match.Groups[1].Value;
+                month = string.Empty;
+                day = string.Empty;
+                precision = "year";
+            }
+        }
+
+        private void ApplyDoiDateFallback(string doi, ref string year, ref string month, ref string day, ref string precision)
+        {
+            string text = (doi ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            Match arxiv = Regex.Match(text, @"arxiv[.:/ ]+(\d{2})(\d{2})\.\d+");
+            if (arxiv.Success)
+            {
+                int yy = Function.ConvertTo<int>(arxiv.Groups[1].Value, 0);
+                int mm = Function.ConvertTo<int>(arxiv.Groups[2].Value, 0);
+                int fullYear = yy >= 91 ? 1900 + yy : 2000 + yy;
+                if (fullYear >= 1990 && fullYear <= 2100 && mm >= 1 && mm <= 12)
+                {
+                    year = fullYear.ToString();
+                    month = mm.ToString();
+                    day = string.Empty;
+                    precision = "month";
+                    return;
+                }
+            }
+
+            Match yearOnly = Regex.Match(text, @"\b((?:19|20)\d{2})\b");
+            if (yearOnly.Success)
+            {
+                year = yearOnly.Groups[1].Value;
+                month = string.Empty;
+                day = string.Empty;
+                precision = "year";
+            }
+        }
+
+        private bool SetDateParts(string yearValue, string monthValue, string dayValue, ref string year, ref string month, ref string day, ref string precision)
+        {
+            string normalizedYear = NormalizeYearValue(yearValue);
+            string normalizedMonth = NormalizeMonthValue(monthValue);
+            string normalizedDay = NormalizeDayValue(dayValue);
+            if (string.IsNullOrWhiteSpace(normalizedYear))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalizedMonth))
+            {
+                int yearNumber = Function.ConvertTo<int>(normalizedYear, 0);
+                int monthNumber = Function.ConvertTo<int>(normalizedMonth, 0);
+                int dayNumber = Function.ConvertTo<int>(normalizedDay, 0);
+                if (dayNumber > 0 && dayNumber > DateTime.DaysInMonth(yearNumber, monthNumber))
+                {
+                    normalizedDay = string.Empty;
+                }
+            }
+
+            year = normalizedYear;
+            month = normalizedMonth;
+            day = string.IsNullOrWhiteSpace(month) ? string.Empty : normalizedDay;
+            precision = NormalizePrecisionValue(string.Empty, year, month, day);
+            return true;
+        }
+
+        private string NormalizeYearValue(string value)
+        {
+            Match match = Regex.Match(value ?? string.Empty, @"(?:19|20)\d{2}");
+            if (!match.Success)
+            {
+                return string.Empty;
+            }
+
+            int year = Function.ConvertTo<int>(match.Value, 0);
+            return year >= 1900 && year <= 2100 ? year.ToString() : string.Empty;
+        }
+
+        private string NormalizeMonthValue(string value)
+        {
+            string text = CleanParsedText(value);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            string fromName = MonthNameToNumber(text);
+            if (!string.IsNullOrWhiteSpace(fromName))
+            {
+                return fromName;
+            }
+
+            Match match = Regex.Match(text, @"\d{1,2}");
+            if (!match.Success)
+            {
+                return string.Empty;
+            }
+
+            int month = Function.ConvertTo<int>(match.Value, 0);
+            return month >= 1 && month <= 12 ? month.ToString() : string.Empty;
+        }
+
+        private string NormalizeDayValue(string value)
+        {
+            Match match = Regex.Match(value ?? string.Empty, @"\d{1,2}");
+            if (!match.Success)
+            {
+                return string.Empty;
+            }
+
+            int day = Function.ConvertTo<int>(match.Value, 0);
+            return day >= 1 && day <= 31 ? day.ToString() : string.Empty;
+        }
+
+        private string NormalizePrecisionValue(string value, string year, string month, string day)
+        {
+            string text = (value ?? string.Empty).Trim().ToLowerInvariant();
+            if (text == "day" || text == "month" || text == "year" || text == "unknown")
+            {
+                return text;
+            }
+            if (!string.IsNullOrWhiteSpace(day))
+            {
+                return "day";
+            }
+            if (!string.IsNullOrWhiteSpace(month))
+            {
+                return "month";
+            }
+            return string.IsNullOrWhiteSpace(year) ? "unknown" : "year";
+        }
+
+        private string MonthNameToNumber(string value)
+        {
+            string text = (value ?? string.Empty).Trim().ToLowerInvariant();
+            if (text.Length < 3)
+            {
+                return string.Empty;
+            }
+
+            string key = text.Substring(0, 3);
+            switch (key)
+            {
+                case "jan": return "1";
+                case "feb": return "2";
+                case "mar": return "3";
+                case "apr": return "4";
+                case "may": return "5";
+                case "jun": return "6";
+                case "jul": return "7";
+                case "aug": return "8";
+                case "sep": return "9";
+                case "oct": return "10";
+                case "nov": return "11";
+                case "dec": return "12";
+                default: return string.Empty;
+            }
+        }
+
+        private string JoinAuthorNames(JObject obj)
+        {
+            List<string> values = ReadAuthorNames(obj == null ? null : obj["authors"]);
+            return string.Join(", ", values.ToArray());
+        }
+
+        private List<string> ReadAuthorNames(JToken token)
+        {
+            List<string> values = new List<string>();
+            if (token == null)
+            {
+                return values;
+            }
+
+            if (token.Type == JTokenType.Array)
+            {
+                foreach (JToken item in token)
+                {
+                    string name = ReadAuthorName(item);
+                    AddUnique(values, name);
+                }
+                return values;
+            }
+
+            AddUnique(values, CleanParsedText(token.ToString()));
+            return values;
+        }
+
+        private string ReadAuthorName(JToken token)
+        {
+            if (token == null)
+            {
+                return string.Empty;
+            }
+
+            if (token.Type == JTokenType.Object)
+            {
+                JObject obj = (JObject)token;
+                string name = GetObjectString(obj, "name");
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    return name;
+                }
+
+                string nameCn = GetObjectString(obj, "name_cn");
+                string nameEn = GetObjectString(obj, "name_en");
+                return !string.IsNullOrWhiteSpace(nameCn) ? nameCn : nameEn;
+            }
+
+            return CleanParsedText(token.ToString());
+        }
+
+        private JArray BuildAuthorDetails(JObject obj, string institution)
+        {
+            JArray result = new JArray();
+            if (obj != null)
+            {
+                JToken detailsToken = obj["author_details"] ?? obj["author_affiliations"];
+                if (detailsToken != null && detailsToken.Type == JTokenType.Array)
+                {
+                    foreach (JToken item in detailsToken)
+                    {
+                        JObject normalized = NormalizeAuthorDetail(item);
+                        if (normalized != null)
+                        {
+                            result.Add(normalized);
+                        }
+                    }
+                }
+            }
+
+            if (result.Count > 0)
+            {
+                return result;
+            }
+
+            List<string> authorNames = ReadAuthorNames(obj == null ? null : obj["authors"]);
+            List<string> institutions = SplitInstitutionValues(institution);
+            foreach (string authorName in authorNames)
+            {
+                List<string> affiliations = institutions.Count == 1 ? new List<string>(institutions) : new List<string>();
+                result.Add(CreateAuthorDetail(authorName, affiliations, new List<string>(), affiliations.Count > 0 ? "single_institution" : "unmatched"));
+            }
+
+            return result;
+        }
+
+        private JObject NormalizeAuthorDetail(JToken token)
+        {
+            if (token == null)
+            {
+                return null;
+            }
+
+            if (token.Type != JTokenType.Object)
+            {
+                string simpleName = CleanParsedText(token.ToString());
+                return string.IsNullOrWhiteSpace(simpleName) ? null : CreateAuthorDetail(simpleName, new List<string>(), new List<string>(), "unmatched");
+            }
+
+            JObject source = (JObject)token;
+            string name = GetObjectString(source, "name");
+            string nameCn = GetObjectString(source, "name_cn");
+            string nameEn = GetObjectString(source, "name_en");
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = !string.IsNullOrWhiteSpace(nameCn) ? nameCn : nameEn;
+            }
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return null;
+            }
+
+            List<string> affiliations = ReadCleanStringArray(source["affiliations"]);
+            string affiliationText = GetObjectString(source, "affiliation_text");
+            if (affiliations.Count == 0 && !string.IsNullOrWhiteSpace(affiliationText))
+            {
+                affiliations = SplitInstitutionValues(affiliationText);
+            }
+
+            List<string> markers = ReadCleanStringArray(source["markers"]);
+            string mappingStatus = GetObjectString(source, "mapping_status");
+            if (string.IsNullOrWhiteSpace(mappingStatus))
+            {
+                mappingStatus = affiliations.Count > 0 ? "matched" : "unmatched";
+            }
+
+            JObject detail = CreateAuthorDetail(name, affiliations, markers, mappingStatus);
+            if (!string.IsNullOrWhiteSpace(nameCn))
+            {
+                detail["name_cn"] = nameCn;
+            }
+            if (!string.IsNullOrWhiteSpace(nameEn))
+            {
+                detail["name_en"] = nameEn;
+            }
+            return detail;
+        }
+
+        private JObject CreateAuthorDetail(string name, List<string> affiliations, List<string> markers, string mappingStatus)
+        {
+            string cleanName = CleanParsedText(name);
+            string nameCn = ContainsChinese(cleanName) ? cleanName : string.Empty;
+            string nameEn = string.IsNullOrWhiteSpace(nameCn) ? cleanName : string.Empty;
+
+            JObject detail = new JObject();
+            detail["name"] = cleanName;
+            detail["name_cn"] = nameCn;
+            detail["name_en"] = nameEn;
+            detail["affiliations"] = ToJArray(affiliations);
+            detail["affiliation_text"] = string.Join("\uFF1B", affiliations.ToArray());
+            detail["markers"] = ToJArray(markers);
+            detail["mapping_status"] = string.IsNullOrWhiteSpace(mappingStatus) ? "unmatched" : mappingStatus;
+            return detail;
+        }
+
+        private string GetObjectString(JObject obj, string key)
+        {
+            if (obj == null || obj[key] == null)
+            {
+                return string.Empty;
+            }
+
+            return CleanParsedText(obj[key].ToString());
+        }
+
+        private List<string> ReadCleanStringArray(JToken token)
+        {
+            List<string> values = new List<string>();
+            if (token == null)
+            {
+                return values;
+            }
+
+            if (token.Type == JTokenType.Array)
+            {
+                foreach (JToken item in token)
+                {
+                    AddUnique(values, CleanParsedText(item == null ? string.Empty : item.ToString()));
+                }
+                return values;
+            }
+
+            AddUnique(values, CleanParsedText(token.ToString()));
+            return values;
+        }
+
+        private List<string> SplitInstitutionValues(string value)
+        {
+            List<string> values = new List<string>();
+            string[] parts = (value ?? string.Empty).Split(new[] { ';', '\uFF1B', '|', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string part in parts)
+            {
+                AddUnique(values, CleanParsedText(part));
+            }
+            return values;
+        }
+
+        private JArray ToJArray(List<string> values)
+        {
+            JArray array = new JArray();
+            foreach (string value in values ?? new List<string>())
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    array.Add(value);
+                }
+            }
+            return array;
+        }
+
+        private void AddUnique(List<string> values, string value)
+        {
+            string current = CleanParsedText(value);
+            if (string.IsNullOrWhiteSpace(current))
+            {
+                return;
+            }
+
+            foreach (string existing in values)
+            {
+                if (string.Equals(existing, current, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
+            values.Add(current);
+        }
+
+        private bool ContainsChinese(string value)
+        {
+            foreach (char current in value ?? string.Empty)
+            {
+                if ((current >= '\u4E00' && current <= '\u9FFF') ||
+                    (current >= '\u3400' && current <= '\u4DBF') ||
+                    (current >= '\uF900' && current <= '\uFAFF'))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private string JoinArray(JObject obj, string key, string separator)

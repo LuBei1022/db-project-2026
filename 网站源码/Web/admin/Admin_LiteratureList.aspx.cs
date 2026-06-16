@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Web;
+using System.Web.Script.Serialization;
 
 namespace Web.admin
 {
@@ -125,18 +126,19 @@ from
         rank() over(order by l.is_top desc,l.addtime desc,l.id desc) as xuhao,
         l.id,
         l.title,
-        (select string_agg(a.name_cn,N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
+        (select string_agg(coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N''),N'未命名作者'),N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
         l.category_id,
         l.publish_year,
         l.source_type,
         l.cover_pic,
         l.status,
+        l.userid,
+        l.import_batch_id,
         l.remark,
         l.canonical_literature_id,
         (select count(1) from LiteratureLike lk where lk.literature_id=l.id) as like_count,
         (select count(1) from LiteratureFavorite fav where fav.literature_id=l.id) as favorite_count,
-        ((select count(1) from LiteratureComment lc where lc.parent_id=0 and lc.is_deleted=0 and lc.status=1 and (lc.canonical_literature_id=l.id or lc.literature_id=l.id))
-         + (select count(1) from ServiceLog_List s where s.name like N'%文献评论%' and s.info_ like N'%/LiteratureInfo.aspx?id=' + cast(l.id as nvarchar(20)) + N'%' and s.status in (1,2) and not exists(select 1 from LiteratureComment lc2 where lc2.source_service_log_id=s.id))) as comment_count,
+        (select count(1) from LiteratureComment lc where lc.parent_id=0 and lc.is_deleted=0 and lc.status=1 and (lc.canonical_literature_id=l.id or lc.literature_id=l.id)) as comment_count,
         l.addtime,
         row_number() over(order by l.is_top desc,l.addtime desc,l.id desc) as row_no
     from Literature l
@@ -449,19 +451,6 @@ SET literature_id=@masterId,
 WHERE literature_id=@duplicateId
    OR canonical_literature_id=@duplicateId;
 
-UPDATE ServiceLog_List
-SET info_=REPLACE(info_,
-    N'/LiteratureInfo.aspx?id=' + CAST(@duplicateId AS NVARCHAR(20)) + N'<',
-    N'/LiteratureInfo.aspx?id=' + CAST(@masterId AS NVARCHAR(20)) + N'<')
-WHERE name LIKE N'[[]文献评论]%'
-  AND info_ LIKE N'%/LiteratureInfo.aspx?id=' + CAST(@duplicateId AS NVARCHAR(20)) + N'<%';
-
-UPDATE ServiceLog_List
-SET info_=REPLACE(info_,
-    N'/LiteratureInfo.aspx?ID=' + CAST(@duplicateId AS NVARCHAR(20)) + N'<',
-    N'/LiteratureInfo.aspx?id=' + CAST(@masterId AS NVARCHAR(20)) + N'<')
-WHERE name LIKE N'[[]文献评论]%'
-  AND info_ LIKE N'%/LiteratureInfo.aspx?ID=' + CAST(@duplicateId AS NVARCHAR(20)) + N'<%';
 ");
                 literatureBll.GetExecSql(sql.ToString());
             }
@@ -544,6 +533,10 @@ WHERE name LIKE N'[[]文献评论]%'
             master.source_type = revision.source_type;
             master.language = revision.language;
             master.publish_year = revision.publish_year;
+            master.publish_month = revision.publish_month;
+            master.publish_day = revision.publish_day;
+            master.publish_date = revision.publish_date;
+            master.publish_date_precision = revision.publish_date_precision;
             master.journal_name = revision.journal_name;
             master.conference_name = revision.conference_name;
             master.publisher = revision.publisher;
@@ -560,11 +553,74 @@ WHERE name LIKE N'[[]文献评论]%'
 
             string revisionAuthors = LiteratureRelationSync.GetAuthorNames(revision.id);
             string masterTags = LiteratureRelationSync.GetTagNames(master.id);
-            LiteratureRelationSync.SyncMetadata(master, revisionAuthors, masterTags);
+            LiteratureRelationSync.SyncMetadata(master, revisionAuthors, masterTags, BuildAuthorDetailsJson(revision.id));
             LiteratureVenueProfileSync.EnsureForLiterature(master);
 
             string updateRevisionSql = "status=4,reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE(),remark=N'\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u5BA1\u6838\u901A\u8FC7\u5E76\u5E94\u7528\u5230\u6587\u732EID:" + masterId + "\u3002'";
             return literatureBll.Update(updateRevisionSql, "id=" + revision.id);
+        }
+
+        private string BuildAuthorDetailsJson(int literatureId)
+        {
+            DataTable dt = literatureBll.GetDatatable(@"
+select
+    m.author_id,
+    coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N'')) as author_name,
+    a.name_cn,
+    a.name_en,
+    m.affiliation_text,
+    (
+        select string_agg(coalesce(nullif(i.name_cn,N''),nullif(i.name_en,N''),nullif(aim.affiliation_text,N'')),N'；') within group (order by aim.institution_order, aim.id)
+        from LiteratureAuthorInstitutionMap aim
+        left join Institution i on i.id=aim.institution_id and i.status<>-1
+        where aim.literature_author_map_id=m.id
+           or (isnull(aim.literature_author_map_id,0)=0 and aim.literature_id=m.literature_id and aim.author_id=m.author_id)
+    ) as institution_names
+from LiteratureAuthorMap m
+inner join Author a on a.id=m.author_id
+where m.literature_id=" + literatureId + @"
+order by m.author_order asc,m.id asc");
+            List<Dictionary<string, object>> details = new List<Dictionary<string, object>>();
+            if (dt != null)
+            {
+                foreach (DataRow row in dt.Rows)
+                {
+                    string name = Function.HtmlDiscode(Convert.ToString(row["author_name"]));
+                    string affiliationText = Function.HtmlDiscode(Convert.ToString(row["institution_names"]));
+                    if (string.IsNullOrWhiteSpace(affiliationText))
+                    {
+                        affiliationText = Function.HtmlDiscode(Convert.ToString(row["affiliation_text"]));
+                    }
+                    List<string> affiliations = SplitAffiliations(affiliationText);
+                    Dictionary<string, object> item = new Dictionary<string, object>();
+                    item["author_id"] = Function.ConvertTo<int>(Convert.ToString(row["author_id"]), 0);
+                    item["name"] = name;
+                    item["name_cn"] = Function.HtmlDiscode(Convert.ToString(row["name_cn"]));
+                    item["name_en"] = Function.HtmlDiscode(Convert.ToString(row["name_en"]));
+                    item["affiliations"] = affiliations;
+                    item["affiliation_text"] = string.Join("; ", affiliations.ToArray());
+                    item["mapping_status"] = affiliations.Count > 0 ? "matched" : "unmatched";
+                    details.Add(item);
+                }
+                dt.Dispose();
+            }
+
+            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            return serializer.Serialize(details);
+        }
+
+        private List<string> SplitAffiliations(string value)
+        {
+            List<string> values = new List<string>();
+            foreach (string part in (value ?? string.Empty).Split(new[] { ';', '\uFF1B', '|', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string current = part.Trim();
+                if (!string.IsNullOrWhiteSpace(current) && !values.Contains(current))
+                {
+                    values.Add(current);
+                }
+            }
+            return values;
         }
 
         public string GetDuplicateMasterLinkHtml(object remarkObj, object canonicalObj)
@@ -700,7 +756,7 @@ order by l.is_top desc,l.addtime desc,l.id desc");
 select
     l.id,
     l.title,
-    (select string_agg(a.name_cn,N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
+    (select string_agg(coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N''),N'未命名作者'),N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
     l.institution,
     l.doi,
     l.keywords,
@@ -917,7 +973,7 @@ order by l.is_top desc,l.addtime desc,l.id desc");
             if (!string.IsNullOrWhiteSpace(searchKeywords))
             {
                 string safeKeywords = SqlLiteral(Function.HtmlEncode(searchKeywords));
-                condition += " and (l.title like N'%" + safeKeywords + "%' or l.institution like N'%" + safeKeywords + "%' or l.doi like N'%" + safeKeywords + "%' or l.keywords like N'%" + safeKeywords + "%' or exists(select 1 from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id and a.name_cn like N'%" + safeKeywords + "%') or exists(select 1 from LiteratureTagMap tm inner join LiteratureTag t on t.id=tm.tag_id where tm.literature_id=l.id and t.name like N'%" + safeKeywords + "%'))";
+                condition += " and (l.title like N'%" + safeKeywords + "%' or l.institution like N'%" + safeKeywords + "%' or l.doi like N'%" + safeKeywords + "%' or l.keywords like N'%" + safeKeywords + "%' or exists(select 1 from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id and (a.name_cn like N'%" + safeKeywords + "%' or a.name_en like N'%" + safeKeywords + "%')) or exists(select 1 from LiteratureTagMap tm inner join LiteratureTag t on t.id=tm.tag_id where tm.literature_id=l.id and t.name like N'%" + safeKeywords + "%'))";
                 SearchKeyWords.Text = searchKeywords;
             }
 
@@ -1092,6 +1148,38 @@ order by l.is_top desc,l.addtime desc,l.id desc");
             return "\u5F85\u5BA1\u6838";
         }
 
+        public string GetSourceText(object userIdObj, object importBatchIdObj)
+        {
+            int userId = Function.ConvertTo<int>(userIdObj, 0);
+            int importBatchId = Function.ConvertTo<int>(importBatchIdObj, 0);
+            if (userId > 0)
+            {
+                return "\u524D\u53F0\u63D0\u4EA4";
+            }
+            if (importBatchId > 0)
+            {
+                return "\u540E\u53F0\u5BFC\u5165";
+            }
+            return "\u540E\u53F0\u65B0\u589E";
+        }
+
+        public string GetSourceBadgeHtml(object userIdObj, object importBatchIdObj)
+        {
+            int userId = Function.ConvertTo<int>(userIdObj, 0);
+            int importBatchId = Function.ConvertTo<int>(importBatchIdObj, 0);
+            string css = "lit-source-admin";
+            if (userId > 0)
+            {
+                css = "lit-source-user";
+            }
+            else if (importBatchId > 0)
+            {
+                css = "lit-source-import";
+            }
+
+            return "<span class=\"lit-source-pill " + css + "\">" + GetSourceText(userIdObj, importBatchIdObj) + "</span>";
+        }
+
         private class AdminPdfExportItem
         {
             public int LiteratureId { get; set; }
@@ -1101,3 +1189,4 @@ order by l.is_top desc,l.addtime desc,l.id desc");
         }
     }
 }
+

@@ -40,11 +40,6 @@ namespace Web
             keyword = Function.GetRequest("keyword");
             ParseCategoryFilter();
             selectedYear = Function.ConvertTo<int>(Function.GetRequest("publish_year"), 0);
-            if (string.Equals(Function.GetRequest("view"), "browse", StringComparison.OrdinalIgnoreCase))
-            {
-                RedirectLegacyBrowseView();
-                return;
-            }
             IsBrowseView = false;
             if (!IsPostBack)
             {
@@ -151,7 +146,7 @@ from
     select
         l.id,
         l.title,
-        (select string_agg(a.name_cn,N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
+        (select string_agg(coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N''),N'未命名作者'),N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
         l.institution,
         l.publish_year,
         l.source_type,
@@ -162,8 +157,7 @@ from
         (select top 1 f.file_path from LiteratureFile f where f.literature_id=l.id and f.status=1 order by f.orderid asc,f.id asc) as pdf_file,
         (select count(1) from LiteratureLike lk where lk.literature_id=l.id) as like_count,
         (select count(1) from LiteratureFavorite fav where fav.literature_id=l.id) as favorite_count,
-        ((select count(1) from LiteratureComment lc where lc.parent_id=0 and lc.is_deleted=0 and lc.status=1 and (lc.canonical_literature_id=l.id or lc.literature_id=l.id))
-         + (select count(1) from ServiceLog_List s where s.name like N'%文献评论%' and s.info_ like N'%/LiteratureInfo.aspx?id=' + cast(l.id as nvarchar(20)) + N'%' and s.status in (1,2) and not exists(select 1 from LiteratureComment lc2 where lc2.source_service_log_id=s.id))) as comment_count,
+        (select count(1) from LiteratureComment lc where lc.parent_id=0 and lc.is_deleted=0 and lc.status=1 and (lc.canonical_literature_id=l.id or lc.literature_id=l.id)) as comment_count,
         " + purchasedSql + @" as already_purchased,
         row_number() over(order by l.is_top desc,l.addtime desc,l.id desc) as row_no
     from Literature l
@@ -182,18 +176,6 @@ order by t.row_no";
             pagerHtml = BuildPager(pageIndex, pageSize);
             BuildSelectedCategoryOverview();
         }
-
-        private void RedirectLegacyBrowseView()
-        {
-            StringBuilder url = new StringBuilder("/LiteratureSearch.aspx");
-            if (HasCategoryFilter)
-            {
-                url.Append("?category_id=");
-                url.Append(Server.UrlEncode(GetCategoryOptionValue(selectedCategoryId)));
-            }
-            Response.Redirect(url.ToString(), true);
-        }
-
         private void BuildSelectedCategoryOverview()
         {
             BrowseCategoryInfoHtml = string.Empty;
@@ -340,7 +322,7 @@ order by t.row_no";
 select top 100
     l.id,
     l.title,
-    (select string_agg(a.name_cn,N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
+    (select string_agg(coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N''),N'未命名作者'),N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
     l.institution,
     l.publish_year,
     l.source_type,
@@ -348,8 +330,7 @@ select top 100
     (select string_agg(t.name,N'，') from LiteratureTagMap m inner join LiteratureTag t on t.id=m.tag_id where m.literature_id=l.id and t.status<>-1) as tag_names,
     (select count(1) from LiteratureLike lk where lk.literature_id=l.id) as like_count,
     (select count(1) from LiteratureFavorite fav where fav.literature_id=l.id) as favorite_count,
-    ((select count(1) from LiteratureComment lc where lc.parent_id=0 and lc.is_deleted=0 and lc.status=1 and (lc.canonical_literature_id=l.id or lc.literature_id=l.id))
-     + (select count(1) from ServiceLog_List s where s.name like N'%文献评论%' and s.info_ like N'%/LiteratureInfo.aspx?id=' + cast(l.id as nvarchar(20)) + N'%' and s.status in (1,2) and not exists(select 1 from LiteratureComment lc2 where lc2.source_service_log_id=s.id))) as comment_count
+    (select count(1) from LiteratureComment lc where lc.parent_id=0 and lc.is_deleted=0 and lc.status=1 and (lc.canonical_literature_id=l.id or lc.literature_id=l.id)) as comment_count
 from Literature l
 where l.status=1 and l.canonical_literature_id is null and l.category_id=" + selectedCategoryId + @"
 order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
@@ -436,7 +417,7 @@ order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 string safeKeyword = SqlLiteral(Function.HtmlEncode(keyword.Trim()));
-                where += " and (l.title like N'%" + safeKeyword + "%' or l.institution like N'%" + safeKeyword + "%' or l.keywords like N'%" + safeKeyword + "%' or l.doi like N'%" + safeKeyword + "%' or l.journal_name like N'%" + safeKeyword + "%' or l.conference_name like N'%" + safeKeyword + "%' or exists(select 1 from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id and a.name_cn like N'%" + safeKeyword + "%') or exists(select 1 from LiteratureTagMap tm inner join LiteratureTag t on t.id=tm.tag_id where tm.literature_id=l.id and t.name like N'%" + safeKeyword + "%'))";
+                where += " and (l.title like N'%" + safeKeyword + "%' or l.institution like N'%" + safeKeyword + "%' or l.keywords like N'%" + safeKeyword + "%' or l.doi like N'%" + safeKeyword + "%' or l.journal_name like N'%" + safeKeyword + "%' or l.conference_name like N'%" + safeKeyword + "%' or exists(select 1 from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id and (a.name_cn like N'%" + safeKeyword + "%' or a.name_en like N'%" + safeKeyword + "%')) or exists(select 1 from LiteratureTagMap tm inner join LiteratureTag t on t.id=tm.tag_id where tm.literature_id=l.id and t.name like N'%" + safeKeyword + "%'))";
             }
             if (HasCategoryFilter)
             {
@@ -763,3 +744,4 @@ order by num desc,venue_name asc";
         }
     }
 }
+

@@ -183,25 +183,7 @@
             set { _upload_pic_indexbj_m = value; }
             get { return _upload_pic_indexbj_m; }
         }
-        private string _info_IntegrateWithdrawal;
-        /// <summary>
-        /// 
-        /// </summary>
-        public string info_IntegrateWithdrawal
-        {
-            set { _info_IntegrateWithdrawal = value; }
-            get { return _info_IntegrateWithdrawal; }
-        }
-        private string _info_WorkflowInfo;
-        /// <summary>
-        /// 
-        /// </summary>
-        public string info_WorkflowInfo
-        {
-            set { _info_WorkflowInfo = value; }
-            get { return _info_WorkflowInfo; }
-        }
-        private int _money_integrate;
+private int _money_integrate;
         /// <summary>
         /// 
         /// </summary>

@@ -1,4 +1,4 @@
-# 回归测试清单
+﻿# 回归测试清单
 
 ## 用户端
 
@@ -18,7 +18,7 @@
 - [ ] 积分扣减或免费下载券逻辑。
 - [ ] 文献点赞。
 - [ ] 文献收藏。
-- [ ] 文献评论提交，返回 JSON 格式保持兼容。
+- [ ] 文献评论提交。
 - [ ] 未登录评论返回 `status=-1`。
 - [ ] 评论长度限制。
 - [ ] 评论冷却限制。
@@ -32,6 +32,7 @@
 
 - [ ] 管理员登录。
 - [ ] 文献列表加载。
+- [ ] 文献来源标识显示正确。
 - [ ] 文献审核。
 - [ ] 文献详情后台页加载。
 - [ ] 后台文献评论审核页加载。
@@ -39,21 +40,26 @@
 - [ ] 评论审核通过。
 - [ ] 评论驳回。
 - [ ] 评论软删除。
-- [ ] 后台服务工单列表。
+- [ ] 后台服务记录列表。
 - [ ] 后台日志页面。
 - [ ] 文献分类维护。
-- [ ] 作者、标签、PDF 附件关联同步。
-- [ ] 文献重复合并后评论归并。
+- [ ] 作者管理列表、详情、编辑。
+- [ ] 机构管理列表、编辑、上下级关系维护。
+- [ ] 期刊管理列表、编辑。
+- [ ] 会议管理列表、编辑。
+- [ ] 作者、机构、PDF 附件关联同步。
+- [ ] 批量 CSV 元数据导入。
+- [ ] 批量 PDF 解析预览、管理员调整、导入。
+- [ ] 重复文献导入拦截。
 
 ## 数据库
 
-- [ ] 执行 `sql\upgrade_add_literature_comment.sql`。
-- [ ] 重复执行升级脚本不报错。
-- [ ] 执行 `sql\migrate_literature_comments_from_servicelog.sql`。
-- [ ] 校验旧 `ServiceLog_List` 文献评论迁移数量。
-- [ ] 校验 `source_service_log_id` 去重。
-- [ ] 校验管理员旧回复迁移为子评论。
-- [ ] 执行 `sql\rollback_literature_comment.sql` 于测试库，确认可回写旧表。
+- [ ] 空数据库执行 `database\manage_db_schema.sql` 可以创建完整表结构。
+- [ ] 还原 `database\manage_db_full.bak` 后核心表存在。
+- [ ] `LiteratureComment` 评论表存在且评论流程可用。
+- [ ] `Author`、`Institution`、`AuthorInstitutionHistory`、`LiteratureAuthorMap`、`LiteratureAuthorInstitutionMap` 作者机构关系表和字段存在。
+- [ ] `Journal`、`Conference`、`LiteratureVenueProfile` 期刊会议资料表存在。
+- [ ] 文献发表年月字段可保存并用于排序。
 
 ## 静态资源
 
@@ -66,5 +72,5 @@
 
 ## 构建
 
-- [x] `MSBuild.exe web.sln /p:Configuration=Debug /p:Platform="Any CPU" /m /v:m` 编译通过。
-- [x] `Web.csproj` Content/Compile 项无实际缺失文件。
+- [ ] `MSBuild.exe web.sln /p:Configuration=Debug /p:Platform="Any CPU" /m /v:m` 编译通过。
+- [ ] `Web.csproj` Content/Compile 项无实际缺失文件。

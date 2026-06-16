@@ -113,7 +113,6 @@ namespace LiteratureManager.Common
                 "IntegrateExchange",
                 "IntegrateExchangeLog",
                 "IntegrateLog",
-                "IntegrateWithdrawal",
                 "LiteratureUpload"
             };
 

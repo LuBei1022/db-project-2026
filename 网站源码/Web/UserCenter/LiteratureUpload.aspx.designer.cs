@@ -8,6 +8,7 @@ namespace Web.UserCenter
         protected global::Web.UserCenter.left left;
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
         protected global::System.Web.UI.WebControls.HiddenField batch_parse_payload;
+        protected global::System.Web.UI.WebControls.HiddenField author_details_payload;
         protected global::System.Web.UI.WebControls.TextBox title;
         protected global::System.Web.UI.WebControls.TextBox author_names;
         protected global::System.Web.UI.WebControls.TextBox institution;
@@ -17,6 +18,8 @@ namespace Web.UserCenter
         protected global::System.Web.UI.WebControls.TextBox journal_name;
         protected global::System.Web.UI.WebControls.TextBox conference_name;
         protected global::System.Web.UI.WebControls.TextBox publish_year;
+        protected global::System.Web.UI.WebControls.TextBox publish_month;
+        protected global::System.Web.UI.WebControls.TextBox publish_day;
         protected global::System.Web.UI.WebControls.TextBox keywords;
         protected global::System.Web.UI.WebControls.TextBox volume;
         protected global::System.Web.UI.WebControls.TextBox issue;

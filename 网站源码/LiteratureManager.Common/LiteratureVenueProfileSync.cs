@@ -1,6 +1,7 @@
 using BLL;
 using Model;
 using System;
+using System.Text.RegularExpressions;
 
 namespace LiteratureManager.Common
 {
@@ -21,7 +22,7 @@ namespace LiteratureManager.Common
 
         private static void EnsureVenue(string venueType, string venueName, Literature literature)
         {
-            venueName = (venueName ?? string.Empty).Trim();
+            venueName = NormalizeVenueName(venueName);
             if (string.IsNullOrWhiteSpace(venueName))
             {
                 return;
@@ -29,7 +30,9 @@ namespace LiteratureManager.Common
 
             string safeType = SqlLiteral(venueType);
             string safeName = SqlLiteral(venueName);
-            LiteratureVenueProfile existing = ProfileBll.SelectSingle("status<>-1 and venue_type=N'" + safeType + "' and venue_name=N'" + safeName + "'");
+            string encodedName = Function.HtmlEncode(venueName);
+            string safeEncodedName = SqlLiteral(encodedName);
+            LiteratureVenueProfile existing = ProfileBll.SelectSingle("status<>-1 and venue_type=N'" + safeType + "' and (venue_name=N'" + safeName + "' or venue_name=N'" + safeEncodedName + "')");
             if (existing != null && existing.id > 0)
             {
                 return;
@@ -37,7 +40,7 @@ namespace LiteratureManager.Common
 
             LiteratureVenueProfile profile = new LiteratureVenueProfile();
             profile.venue_type = venueType;
-            profile.venue_name = Function.HtmlEncode(venueName);
+            profile.venue_name = encodedName;
             profile.introduction = string.Empty;
             profile.impact_factor = string.Empty;
             profile.jcr_quartile = string.Empty;
@@ -64,17 +67,17 @@ namespace LiteratureManager.Common
         {
             string safeTypeText = GetTypeText(venueType);
             string safeName = Function.HtmlEncode(venueName);
-            string existsWhere = "status<>-1 and name=N'" + SqlLiteral("[期刊/会议资料维护] " + safeTypeText + "：" + venueName) + "'";
+            string existsWhere = "status<>-1 and name=N'" + SqlLiteral("[期刊/会议维护] " + safeTypeText + "：" + venueName) + "'";
             if (ServiceLogBll.Exists(existsWhere))
             {
                 return;
             }
 
             ServiceLog_List ticket = new ServiceLog_List();
-            ticket.name = Function.HtmlEncode("[期刊/会议资料维护] " + safeTypeText + "：" + venueName);
+            ticket.name = Function.HtmlEncode("[期刊/会议维护] " + safeTypeText + "：" + venueName);
             ticket.info_ = Function.HtmlEncode(
                 "系统检测到文献《" + Function.HtmlDiscode(literature.title) + "》包含新的" + safeTypeText + "：" + venueName +
-                "。请管理员维护介绍、影响因子/会议等级、ISSN/分区、官网等信息。维护入口：/admin/Admin_LiteratureVenueProfile.aspx?Action=Edit&MenuId=1729&ID=" + profileId);
+                "。请管理员维护介绍、影响因子/会议等级、ISSN/分区、官网等信息。维护入口：" + GetMaintenanceUrl(venueType));
             ticket.addtime = DateTime.Now;
             ticket.uptime = DateTime.Now;
             ticket.status = 0;
@@ -88,9 +91,25 @@ namespace LiteratureManager.Common
             return venueType == "journal" ? "期刊" : "会议";
         }
 
+        private static string GetMaintenanceUrl(string venueType)
+        {
+            return venueType == "journal"
+                ? "/admin/Admin_JournalList.aspx?MenuId=1732"
+                : "/admin/Admin_ConferenceList.aspx?MenuId=1733";
+        }
+
         private static string SqlLiteral(string value)
         {
             return (value ?? string.Empty).Replace("'", "''");
+        }
+
+        private static string NormalizeVenueName(string value)
+        {
+            string text = Function.HtmlDiscode(value ?? string.Empty)
+                .Replace('\u00A0', ' ')
+                .Replace('\u2002', ' ')
+                .Replace('\u2003', ' ');
+            return Regex.Replace(text, @"\s+", " ").Trim();
         }
     }
 }
