@@ -32,6 +32,8 @@
         .qa-answer-area { display: none; border-top: 1px solid #eef2f6; margin-top: 20px; padding-top: 18px; }
         .qa-answer-label { font-size: 13px; color: #8493a4; margin-bottom: 8px; }
         .qa-answer { font-size: 16px; line-height: 1.8; color: #22303f; white-space: pre-wrap; }
+        .qa-answer strong { font-weight: 600; color: #16324f; }
+        .qa-answer code { background: #eef2f7; border-radius: 4px; padding: 1px 6px; font-size: 14px; font-family: Consolas, Monaco, monospace; }
         .qa-sources { margin-top: 18px; }
         .qa-source { background: #f6f8fb; border-radius: 10px; padding: 10px 12px; font-size: 13px; color: #5b6b7d; line-height: 1.6; margin-top: 8px; word-break: break-word; }
         .qa-hint { color: #8493a4; font-size: 14px; padding: 6px 0; }
@@ -89,6 +91,16 @@
         function el(id) { return document.getElementById(id); }
         function esc(s) { var d = document.createElement("div"); d.textContent = (s == null ? "" : s); return d.innerHTML; }
         function decodeEntities(s) { var d = document.createElement("div"); d.innerHTML = (s == null ? "" : s); return d.textContent; }
+        // 轻量 markdown 渲染：先转义防 XSS，再处理 **加粗** / *斜体* / `代码` / ### 标题。
+        // 换行交给 CSS 的 white-space: pre-wrap，无需额外处理。
+        function renderMarkdown(s) {
+            var h = esc(s);
+            h = h.replace(/^###\s+(.+)$/gm, '<strong>$1</strong>');
+            h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            h = h.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+            h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+            return h;
+        }
 
         function qaSearch() {
             var kw = (el("paperKeyword").value || "").trim();
@@ -151,7 +163,7 @@
                 .then(function (data) {
                     el("askBtn").disabled = false;
                     if (data.error) { el("answerText").innerHTML = '<span class="qa-error">' + esc(data.error) + '</span>'; return; }
-                    el("answerText").textContent = data.answer || "（无回答）";
+                    el("answerText").innerHTML = renderMarkdown(data.answer || "（无回答）");
                     var sources = data.sources || [];
                     if (sources.length) {
                         var sh = '<div class="qa-answer-label">回答依据（来自论文原文）</div>';
