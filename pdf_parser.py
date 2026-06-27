@@ -3,6 +3,13 @@ import pdfplumber
 from typing import List, Dict, Optional
 import pytesseract
 
+# wordninja 用来把粘在一起的英文长串重新切成单词（没装也不影响，自动跳过）
+try:
+    import wordninja
+    _WORDNINJA_OK = True
+except Exception:
+    _WORDNINJA_OK = False
+
 
 def extract_paper_info(pdf_path: str) -> Optional[Dict]:
 
@@ -121,33 +128,91 @@ def extract_paper_info(pdf_path: str) -> Optional[Dict]:
 
 
 
+_SPACE_RE = re.compile(r"\s+")
+_JAMMED_TOKEN_RE = re.compile(r"[A-Za-z]{16,}")  # 16个以上连续字母 = 大概率粘连
+
+
+def _split_jammed_token(token: str) -> str:
+    """把一个粘连的英文长串切成正常单词，如 IEEEROBOTICS -> IEEE ROBOTICS。"""
+    if not _WORDNINJA_OK:
+        return token
+    parts = wordninja.split(token)
+    # 只有切出多段、且没丢字符时才采用，避免误伤
+    if len(parts) > 1 and "".join(parts).lower() == token.lower():
+        return " ".join(parts)
+    return token
+
+
+def restore_word_spaces(text: str) -> str:
+    """
+    修复 pdfplumber 偶发的“单词全粘在一起”问题。
+    只处理超长纯字母串，正常文本、数字、中文一律不动，避免误伤。
+    """
+    if not text:
+        return text
+
+    def _fix_line(line: str) -> str:
+        # 逐个空白分隔的 token 检查，只有“超长字母串”才尝试切分
+        tokens = line.split(" ")
+        out = []
+        for tok in tokens:
+            if _JAMMED_TOKEN_RE.fullmatch(tok):
+                out.append(_split_jammed_token(tok))
+            elif len(tok) > 20 and _JAMMED_TOKEN_RE.search(tok):
+                # token 里夹杂标点的粘连，如 "methods.InThiswork"
+                out.append(_JAMMED_TOKEN_RE.sub(lambda m: _split_jammed_token(m.group(0)), tok))
+            else:
+                out.append(tok)
+        return " ".join(out)
+
+    return "\n".join(_fix_line(ln) for ln in text.splitlines())
+
+
+def _line_looks_jammed(text: str) -> bool:
+    """判断一段文字是否“缺空格”（字母多但空格极少）。"""
+    if not text:
+        return False
+    letters = sum(c.isalpha() and ord(c) < 128 for c in text)
+    spaces = text.count(" ")
+    return letters > 200 and spaces < letters / 12
+
+
 def extract_full_text_smart(pdf_path: str) -> str:
-    #RAG专用 智能全文提取：优先光速直读，遇扫描版自动回退至 OCR 识别。
+    #RAG专用 智能全文提取：优先光速直读，遇扫描版自动回退至 OCR，最后修复单词粘连。
 
     full_text = ""
     try:
         with pdfplumber.open(pdf_path) as pdf:
             if len(pdf.pages) == 0:
                 return ""
-            
-            # 遍历 PDF 的每一页
+
             for i, page in enumerate(pdf.pages):
-                #优先尝试直接提取底层文本 (速度极快)
-                text = page.extract_text()
-                
-                # 如果提取出的文本极少（少于50字），我们判定这大概率是一页扫描件或纯图片
-                if not text or len(text.strip()) < 50:
-                    print(f"正在使用 OCR 深度扫描第 {i+1} 页...")
-                    
-                    # 将 PDF 当前页渲染为高分辨率图片 (300 dpi 保证 OCR 认得清)
-                    img = page.to_image(resolution=300).original
-                    
-                    # 调用 Tesseract 识别图片中的文字 (支持中文简体和英文)
-                    text = pytesseract.image_to_string(img, lang='chi_sim+eng')
-                
+                # 1) 优先直接提取底层文本
+                text = page.extract_text() or ""
+
+                # 2) 若这一页明显粘连，用更小的字符间距阈值重抽一次，往往能恢复空格
+                if _line_looks_jammed(text):
+                    retry = page.extract_text(x_tolerance=1.0) or ""
+                    if retry.count(" ") > text.count(" "):
+                        text = retry
+
+                # 3) 文本极少 -> 判定为扫描页，OCR 兜底（单页 try，失败不影响整篇）
+                if len(text.strip()) < 50:
+                    try:
+                        print(f"正在使用 OCR 深度扫描第 {i+1} 页...")
+                        img = page.to_image(resolution=300).original
+                        text = pytesseract.image_to_string(img, lang='chi_sim+eng')
+                    except Exception as ocr_err:
+                        # 多半是没装 Tesseract 引擎/中文包；跳过该页而不是整篇失败
+                        print(f"第 {i+1} 页 OCR 跳过（{ocr_err}）")
+                        text = text or ""
+
+                # 4) 清掉 (cid:NN) 这类无法映射的字形噪声，再修复英文单词粘连
                 if text:
+                    text = re.sub(r"\(cid:\d+\)", "", text)
+                    text = restore_word_spaces(text)
                     full_text += text + "\n\n"
-                    
+
         return full_text
     except Exception as e:
         print(f"RAG智能提取失败，文件路径: {pdf_path}, 错误: {e}")
