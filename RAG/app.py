@@ -1,5 +1,5 @@
 """
-RAG 微服务（Flask）。独立运行，默认端口 5050。
+RAG 微服务（Flask）。独立运行，默认端口 5051。
 网站(ASP.NET)端只需通过 HTTP 调这里的接口即可接入“智能问答”功能。
 
 接口一览：
@@ -13,6 +13,7 @@ RAG 微服务（Flask）。独立运行，默认端口 5050。
 真正的论文上传/检索由 ASP.NET 网站负责，本服务只专注 RAG。
 """
 from flask import Flask, request, jsonify
+import os
 
 import rag_utils
 import db_utils
@@ -76,6 +77,38 @@ def rag_ask():
         return jsonify({"error": f"问答失败: {e}"}), 500
 
 
+@app.route("/rag/index_paper", methods=["POST"])
+def rag_index_paper():
+    """
+    重建单篇论文索引。
+    网站上传或后台导入成功后可以异步调用；失败只影响 RAG，不应阻断上传流程。
+    """
+    data = request.get_json(silent=True) or request.form
+    paper_id = data.get("paper_id")
+    try:
+        paper_id = int(paper_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "paper_id 必须是整数"}), 400
+
+    lit = db_utils.get_literature_by_id(paper_id)
+    if not lit:
+        return jsonify({"error": f"未找到论文 ID {paper_id}"}), 404
+
+    try:
+        from backfill_index import get_paper_text
+
+        text, source = get_paper_text(paper_id, lit)
+        if not text:
+            return jsonify({"error": "该论文既无 PDF 全文也无可用元数据，无法建索引"}), 422
+        rag_utils.delete_paper_from_vector_db(paper_id)
+        ok = rag_utils.add_paper_to_vector_db(paper_id, text)
+        if not ok:
+            return jsonify({"error": "写入向量库失败"}), 500
+        return jsonify({"status": "ok", "paper_id": paper_id, "source": source}), 200
+    except Exception as e:
+        return jsonify({"error": f"重建索引失败: {e}"}), 500
+
+
 @app.route("/rag/search", methods=["GET"])
 def rag_search():
     """纯语义检索：只返回相关原文段落，不调用大模型生成。"""
@@ -95,4 +128,4 @@ def rag_search():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5050)
+    app.run(debug=True, host="0.0.0.0", port=int(os.getenv("RAG_PORT", "5051")))

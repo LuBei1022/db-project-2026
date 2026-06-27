@@ -67,6 +67,9 @@ def get_paper_text(paper_id: int, lit_row: dict):
         if real_path:
             text = extract_full_text_smart(real_path)
             if text and text.strip():
+                meta_text = db_utils.build_metadata_text(lit_row)
+                if meta_text:
+                    text = meta_text + "\n\n" + text
                 return text, "pdf"
             print(f"  [提示] PDF 提取为空，降级用元数据: {real_path}")
         else:
