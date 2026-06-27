@@ -16,7 +16,7 @@ namespace Web.Inc
     ///   POST /Inc/RagApi.ashx?action=ask  (JSON: paper_id, question) → 转发到 {rag}/rag/ask
     ///
     /// Python 服务地址在 Web.config 的 appSettings["rag_service_url"] 配置，
-    /// 默认 http://localhost:5050 。
+    /// 默认 http://127.0.0.1:5051 。
     /// </summary>
     public class RagApi : IHttpHandler
     {
@@ -25,7 +25,7 @@ namespace Web.Inc
             context.Response.ContentType = "application/json;charset=UTF-8";
             context.Response.Cache.SetCacheability(HttpCacheability.NoCache);
 
-            string ragBase = (ConfigurationManager.AppSettings["rag_service_url"] ?? "http://localhost:5050").TrimEnd('/');
+            string ragBase = (ConfigurationManager.AppSettings["rag_service_url"] ?? "http://127.0.0.1:5051").TrimEnd('/');
             string action = (context.Request["action"] ?? string.Empty).Trim().ToLowerInvariant();
 
             try

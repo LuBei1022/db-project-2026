@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="LiteratureQA.aspx.cs" Inherits="Web.LiteratureQA" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="LiteratureQA.aspx.cs" Inherits="Web.LiteratureQA" CodePage="65001" %>
 
 <%@ Register TagPrefix="LiteratureManager" TagName="css" Src="/css.ascx" %>
 <%@ Register TagPrefix="LiteratureManager" TagName="top" Src="/top.ascx" %>

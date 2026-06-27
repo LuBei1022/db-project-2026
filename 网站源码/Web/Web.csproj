@@ -1144,6 +1144,7 @@
             <Content Include="cert\apiclient_cert.p12" />
     <Content Include="cert\apiclient_cert.pem" />
     <Content Include="cert\apiclient_key.pem" />
+    <Content Include="Inc\RagApi.ashx" />
     <None Include="packages.config" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>

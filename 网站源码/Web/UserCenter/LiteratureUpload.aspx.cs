@@ -131,6 +131,10 @@ namespace Web.UserCenter
                 literature.id = literatureId;
                 LiteratureRelationSync.Sync(literature, author_names.Text.Trim(), string.Empty, uploadedPdfPath, uploadedPdfName, author_details_payload.Value);
                 LiteratureVenueProfileSync.EnsureForLiterature(literature);
+                if (literature.status == 1)
+                {
+                    LiteratureRagSync.QueueReindex(literature.id);
+                }
                 string successMessage = platformDuplicateMasterId > 0
                     ? "\u5E73\u53F0\u5DF2\u5B58\u5728\u8FD9\u7BC7\u6587\u732E\uFF0C\u672C\u6B21\u63D0\u4EA4\u5DF2\u8FDB\u5165\u540E\u53F0\u5BA1\u6838\uFF0C\u5BA1\u6838\u901A\u8FC7\u540E\u5C06\u5171\u7528\u5DF2\u6709\u8BE6\u60C5\u9875\u3002"
                     : "\u6587\u732E\u5DF2\u63D0\u4EA4\uFF0C\u8BF7\u7B49\u5F85\u540E\u53F0\u5BA1\u6838\u901A\u8FC7\u540E\u5C55\u793A\uFF01";
@@ -280,6 +284,10 @@ namespace Web.UserCenter
                     literature.id = literatureId;
                     LiteratureRelationSync.Sync(literature, parsedAuthorNames, string.Empty, uploadedPdfPath, uploadedPdfName, parsedAuthorDetails);
                     LiteratureVenueProfileSync.EnsureForLiterature(literature);
+                    if (literature.status == 1)
+                    {
+                        LiteratureRagSync.QueueReindex(literature.id);
+                    }
                     if (platformDuplicateMasterId > 0)
                     {
                         duplicatePendingCount++;

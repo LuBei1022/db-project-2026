@@ -231,6 +231,10 @@ namespace Web.admin
                         originalFileName,
                         GetAuthorDetailsJson(parsed));
                     LiteratureVenueProfileSync.EnsureForLiterature(literature);
+                    if (literature.status == 1)
+                    {
+                        LiteratureRagSync.QueueReindex(literature.id);
+                    }
                     batch.success_count++;
                 }
                 catch (Exception ex)
@@ -299,6 +303,10 @@ namespace Web.admin
 
                         literature.id = literatureId;
                         LiteratureRelationSync.Sync(literature, GetValue(row, "author_names"), GetValue(row, "tag_names"), string.Empty, string.Empty);
+                        if (literature.status == 1)
+                        {
+                            LiteratureRagSync.QueueReindex(literature.id);
+                        }
                         batch.success_count++;
                     }
                     catch (Exception ex)

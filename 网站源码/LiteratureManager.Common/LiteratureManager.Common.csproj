@@ -178,6 +178,7 @@
     <Compile Include="HttpWebResponseUtility.cs" />
     <Compile Include="ImportDataLog.cs" />
     <Compile Include="JsonHelper.cs" />
+    <Compile Include="LiteratureRagSync.cs" />
     <Compile Include="LiteratureRelationSync.cs" />
     <Compile Include="LiteratureVenueProfileSync.cs" />
     <Compile Include="MakePic.cs" />

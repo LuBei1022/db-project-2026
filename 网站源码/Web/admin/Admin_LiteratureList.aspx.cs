@@ -318,6 +318,7 @@ order by lit_count desc,t.id asc");
                     if (literatureBll.Update(mergeSql, "id=" + literature.id))
                     {
                         MergeDuplicateLiteratureData(literature.id, duplicateMasterId);
+                        LiteratureRagSync.QueueReindex(duplicateMasterId);
                         Function.Ok_Return(Cookie.GetCookie("LMS_AdminName"), "\u91CD\u590D\u6295\u7A3F\u300A" + Function.HtmlDiscode(literature.title) + "\u300B\u5DF2\u5BA1\u6838\u901A\u8FC7\uFF0C\u5C06\u5171\u7528\u539F\u6587\u732E\u8BE6\u60C5\u9875!", backUrl, 0);
                     }
                     else
@@ -343,6 +344,7 @@ order by lit_count desc,t.id asc");
                     if (reviewStatus == 1)
                     {
                         LiteratureVenueProfileSync.EnsureForLiterature(literature);
+                        LiteratureRagSync.QueueReindex(literature.id);
                     }
                     Function.Ok_Return(Cookie.GetCookie("LMS_AdminName"), "\u6587\u732E\u300A" + Function.HtmlDiscode(literature.title) + "\u300B" + reviewName + "\u6210\u529F!", backUrl, 0);
                 }
@@ -557,7 +559,12 @@ WHERE literature_id=@duplicateId
             LiteratureVenueProfileSync.EnsureForLiterature(master);
 
             string updateRevisionSql = "status=4,reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE(),remark=N'\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u5BA1\u6838\u901A\u8FC7\u5E76\u5E94\u7528\u5230\u6587\u732EID:" + masterId + "\u3002'";
-            return literatureBll.Update(updateRevisionSql, "id=" + revision.id);
+            bool revisionUpdated = literatureBll.Update(updateRevisionSql, "id=" + revision.id);
+            if (revisionUpdated)
+            {
+                LiteratureRagSync.QueueReindex(master.id);
+            }
+            return revisionUpdated;
         }
 
         private string BuildAuthorDetailsJson(int literatureId)

@@ -1885,8 +1885,86 @@ def clean_abstract_line(line: str) -> str:
     return text
 
 
+def should_merge_pdf_split_token_pair(left: str, right: str) -> bool:
+    if wordninja is None:
+        return False
+    if not re.fullmatch(r"[A-Za-z]+", left or "") or not re.fullmatch(r"[A-Za-z]+", right or ""):
+        return False
+    if (left.lower(), right.lower()) in {
+        ("same", "time"),
+        ("real", "world"),
+        ("high", "quality"),
+        ("image", "conditioned"),
+        ("manual", "labor"),
+        ("computer", "science"),
+    }:
+        return False
+    combined = left + right
+    if len(combined) < 6 or len(left) > 14 or len(right) > 12:
+        return False
+    if not (len(left) <= 6 or len(right) <= 8):
+        return False
+    pieces = wordninja.split(combined)
+    return len(pieces) == 1 and pieces[0].lower() == combined.lower()
+
+
+def repair_probable_pdf_word_splits(text: str) -> str:
+    if wordninja is None or not text:
+        return text
+
+    pattern = re.compile(r"\b([A-Za-z]{1,14})\s+([A-Za-z]{1,10})\b")
+    previous = None
+    current = text
+    rounds = 0
+    while previous != current and rounds < 3:
+        previous = current
+
+        def replace(match):
+            left, right = match.group(1), match.group(2)
+            if should_merge_pdf_split_token_pair(left, right):
+                return left + right
+            return match.group(0)
+
+        current = pattern.sub(replace, current)
+        rounds += 1
+    return current
+
+
 def repair_common_pdf_word_splits(text: str) -> str:
     replacements = {
+        "sametime": "same time",
+        "How ever": "However",
+        "how ever": "however",
+        "in troduce": "introduce",
+        "In troduce": "Introduce",
+        "tex tual": "textual",
+        "Tex tual": "Textual",
+        "cre ating": "creating",
+        "Cre ating": "Creating",
+        "effi ciency": "efficiency",
+        "Effi ciency": "Efficiency",
+        "resolu tion": "resolution",
+        "Resolu tion": "Resolution",
+        "Vox els": "Voxels",
+        "vox els": "voxels",
+        "mod eling": "modeling",
+        "Mod eling": "Modeling",
+        "ap proximation": "approximation",
+        "Ap proximation": "Approximation",
+        "ap plications": "applications",
+        "Ap plications": "Applications",
+        "supplemen tary": "supplementary",
+        "Supplemen tary": "Supplementary",
+        "lever ages": "leverages",
+        "Lever ages": "Leverages",
+        "gen erative": "generative",
+        "Gen erative": "Generative",
+        "prim itive": "primitive",
+        "Prim itive": "Primitive",
+        "aver age": "average",
+        "Aver age": "Average",
+        "determin istic": "deterministic",
+        "Determ inistic": "Deterministic",
         "fabric ability": "fabricability",
         "sup ports": "supports",
         "ef ficiency": "efficiency",
@@ -1897,10 +1975,34 @@ def repair_common_pdf_word_splits(text: str) -> str:
         "prod uct": "product",
         "prod ucts": "products",
         "multi session": "multi-session",
+        "ge. ometry": "geometry",
+        "physico chemical": "physicochemical",
+        "complement ari ty": "complementarity",
+        "intro duce": "introduce",
+        "mani folds": "manifolds",
+        "Focus ing": "Focusing",
+        "focus ing": "focusing",
+        "consis tently": "consistently",
+        "foun da tion": "foundation",
+        "founda tion": "foundation",
+        "condi tion": "condition",
+        "genera tive": "generative",
+        "Compu tational": "Computational",
+        "compu tational": "computational",
+        "molec ular": "molecular",
+        "sur faces": "surfaces",
+        "sur face": "surface",
+        "pro tein": "protein",
+        "param eter": "parameter",
+        "fine tuning": "fine-tuning",
+        "Lo RA": "LoRA",
+        "github. com": "github.com",
+        "doi. org": "doi.org",
+        "stanford. edu": "stanford.edu",
     }
     for source, target in replacements.items():
         text = re.sub(re.escape(source), target, text, flags=re.IGNORECASE if source.islower() else 0)
-    return text
+    return repair_probable_pdf_word_splits(text)
 
 
 def clean_abstract_block(text: str) -> str:
@@ -1975,6 +2077,196 @@ def get_pdf_text(pdf, max_pages: int = 3) -> Tuple[str, List[str]]:
         if page_text:
             texts.append(page_text)
     return "\n".join(texts), first_page_lines
+
+
+RAG_SECTION_HEADING_RE = re.compile(
+    r"^(?:\d+(?:\.\d+)*\.?\s+|[IVX]+\.\s+)?"
+    r"(Abstract|Introduction|Related\s+Work|Background|Preliminar(?:y|ies)|"
+    r"Method|Methodology|Approach|Model|Architecture|Implementation|"
+    r"Experiment(?:s|al)?|Evaluation|Result(?:s)?|Discussion|Conclusion|"
+    r"Acknowledg(?:e)?ments?|References|Appendix|"
+    r"摘要|引言|背景|相关工作|方法|实验|结果|讨论|结论|参考文献|附录)\b",
+    re.IGNORECASE,
+)
+
+
+def is_rag_heading(line: str) -> bool:
+    text = normalize_line(line).strip()
+    if not text or len(text) > 100:
+        return False
+    if not text[0].isdigit() and text[0].islower():
+        return False
+    if len(text.split()) > 10 and not re.match(r"^\d+(?:\.\d+)*\.?\s+", text):
+        return False
+    if not re.match(r"^\d+(?:\.\d+)*\.?\s+", text) and re.search(r"\.\s+[A-Za-z]", text) and len(text.split()) > 3:
+        return False
+    if re.search(r"\b(as shown|achieves|improves|outperforms|combined with|average denotes|model average|quantitative|qualitative|presented|demonstrates|figure|table|we first)\b", text, re.IGNORECASE):
+        return False
+    return bool(RAG_SECTION_HEADING_RE.search(text))
+
+
+def is_rag_noise_line(line: str) -> bool:
+    text = normalize_line(line)
+    if not text:
+        return True
+    if re.fullmatch(r"\d{1,4}", text):
+        return True
+    if re.fullmatch(r"[.·•\-–—_ ]{2,}", text):
+        return True
+    if len(text) <= 2 and not re.search(r"[\u4e00-\u9fff]", text):
+        return True
+    lowered = text.lower()
+    if any(noise in lowered for noise in FRONT_MATTER_NOISE_HINTS):
+        return True
+    if re.fullmatch(r"(?:arxiv|preprint|submitted|accepted)\s*:?\s*\d{0,4}", lowered):
+        return True
+    return False
+
+
+def normalize_rag_line(line: str) -> str:
+    text = normalize_line(line)
+    text = re.sub(r"(?<=\s)[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ](?=\s)", " ", text)
+    text = re.sub(r"(?<=\w)\s+\d\s+(?=\w)", " ", text)
+    text = repair_common_pdf_word_splits(text)
+    text = re.sub(r"\s+([,.;:!?%)\]])", r"\1", text)
+    text = re.sub(r"([(\[])\s+", r"\1", text)
+    text = re.sub(r"([a-z])([A-Z])", r"\1 \2", text)
+    text = re.sub(r"([A-Z]{2,})([A-Z][a-z])", r"\1 \2", text)
+    text = re.sub(r"([,.;:!?])(?=[A-Za-z])", r"\1 ", text)
+    text = re.sub(r"\s+", " ", text)
+    return repair_common_pdf_word_splits(restore_word_spaces(text.strip()))
+
+
+def should_join_rag_lines(previous: str, current: str) -> bool:
+    if not previous or not current:
+        return False
+    if is_rag_heading(previous) or is_rag_heading(current):
+        return False
+    if re.search(r"[。！？.!?:;]$", previous):
+        return True
+    if previous.endswith("-"):
+        return True
+    if len(previous) < 80:
+        return True
+    return bool(re.search(r"[a-z0-9,;:]$", previous) and re.search(r"^[a-z0-9(]", current))
+
+
+def clean_full_text_for_rag(page_texts: Sequence[str]) -> str:
+    page_lines: List[List[str]] = []
+    line_frequency: Dict[str, int] = {}
+    for page_text in page_texts:
+        lines = [normalize_rag_line(line) for line in split_lines(page_text)]
+        lines = [line for line in lines if line and not is_rag_noise_line(line)]
+        page_lines.append(lines)
+        for line in set(lines):
+            key = line.lower()
+            line_frequency[key] = line_frequency.get(key, 0) + 1
+
+    repeated_line_keys = {
+        key
+        for key, count in line_frequency.items()
+        if count >= 3 and count >= max(3, int(len(page_lines) * 0.35)) and len(key) <= 120
+    }
+
+    paragraphs: List[str] = []
+    current_parts: List[str] = []
+    stop_at_references = False
+
+    def flush_current() -> None:
+        if not current_parts:
+            return
+        text = " ".join(current_parts)
+        text = text.replace("- ", "")
+        text = clean_paragraph(text)
+        if readable_char_count(text) >= 12:
+            paragraphs.append(text)
+        current_parts.clear()
+
+    for lines in page_lines:
+        for line in lines:
+            if line.lower() in repeated_line_keys and not is_rag_heading(line):
+                continue
+            if re.fullmatch(r"(?:references|参考文献)\s*\.?", line, re.IGNORECASE):
+                flush_current()
+                stop_at_references = True
+                break
+            if stop_at_references:
+                break
+            if is_rag_heading(line):
+                flush_current()
+                paragraphs.append(line)
+                continue
+            if current_parts and should_join_rag_lines(current_parts[-1], line):
+                if current_parts[-1].endswith("-"):
+                    current_parts[-1] = current_parts[-1][:-1] + line
+                else:
+                    current_parts.append(line)
+            else:
+                flush_current()
+                current_parts.append(line)
+        if stop_at_references:
+            break
+        flush_current()
+
+    cleaned: List[str] = []
+    seen: Set[str] = set()
+    for paragraph in paragraphs:
+        normalized = normalize_rag_line(paragraph)
+        if not normalized:
+            continue
+        if (
+            cleaned
+            and not is_rag_heading(cleaned[-1])
+            and not is_rag_heading(normalized)
+            and not re.search(r"[.!?銆傦紒锛?:;]$", cleaned[-1])
+        ):
+            merged = normalize_rag_line(cleaned[-1] + " " + normalized)
+            cleaned[-1] = merged
+            seen.add(re.sub(r"\s+", " ", merged.lower()))
+            continue
+        key = re.sub(r"\s+", " ", normalized.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(normalized)
+
+    return "\n\n".join(cleaned).strip()
+
+
+def extract_full_text_smart(pdf_path: str) -> str:
+    """RAG-only full-text extraction. Upload metadata parsing still uses extract_paper_info()."""
+    page_texts: List[str] = []
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            for index, page in enumerate(pdf.pages):
+                if index == 0:
+                    raw_text = extract_page_text(page)
+                    page_text = raw_text if has_standalone_abstract_heading(split_lines(raw_text)) else extract_page_text_reading_order(page)
+                else:
+                    page_text = extract_page_text_reading_order(page)
+                if readable_char_count(page_text) < 80:
+                    try:
+                        page_text = normalize_text(page.extract_text(x_tolerance=2, y_tolerance=3) or "")
+                    except Exception:
+                        page_text = ""
+                if readable_char_count(page_text) < 80:
+                    try:
+                        import pytesseract
+
+                        image = page.to_image(resolution=220).original
+                        page_text = pytesseract.image_to_string(image, lang="chi_sim+eng")
+                    except Exception:
+                        page_text = page_text or ""
+                if page_text:
+                    page_texts.append(page_text)
+    except Exception as exc:
+        print("RAG full text parse error: {0}".format(exc))
+        return ""
+
+    full_text = clean_full_text_for_rag(page_texts)
+    if not full_text and page_texts:
+        full_text = clean_paragraph("\n".join(page_texts))
+    return full_text
 
 
 def extract_paper_info(pdf_path: str) -> Optional[Dict]:
