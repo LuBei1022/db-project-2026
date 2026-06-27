@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# === RAG 模块生成物（不要提交）===
+chroma_db/
+chroma_demo/
+chroma_demo_pdf/
+uploads/
+*.pyc
