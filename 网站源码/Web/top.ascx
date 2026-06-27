@@ -1553,6 +1553,7 @@
             <ul>
                 <li><a href="/">&#39318;&#39029;</a></li>
                 <li><a href="/LiteratureSearch.aspx">&#25991;&#29486;&#26816;&#32034;</a></li>
+                <li><a href="/LiteratureQA.aspx">&#26234;&#33021;&#38382;&#31572;</a></li>
                 <li><a href="/LiteratureVenue.aspx">&#25991;&#29486;/&#26399;&#21002;&#27719;&#24635;</a></li>
                 <li><a href="<%=AcademicNewsHref %>">&#23398;&#26415;&#36164;&#35759;</a></li>
                 <li><a <%=(IsLogin?"href=\"/User/LiteratureUpload\"":" class=\"loginBut\"") %>>&#25991;&#29486;&#25237;&#31295;</a></li>

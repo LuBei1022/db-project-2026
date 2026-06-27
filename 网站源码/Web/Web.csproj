@@ -472,6 +472,7 @@
     <Content Include="index.aspx" />
     <Content Include="LiteratureBatchDownload.ashx" />
     <Content Include="LiteratureInfo.aspx" />
+    <Content Include="LiteratureQA.aspx" />
     <Content Include="LiteratureSearch.aspx" />
     <Content Include="LiteratureVenue.aspx" />
     <Content Include="js.ascx" />
@@ -905,6 +906,9 @@
     <Compile Include="Inc\LiteratureGraph.ashx.cs">
       <DependentUpon>LiteratureGraph.ashx</DependentUpon>
     </Compile>
+    <Compile Include="Inc\RagApi.ashx.cs">
+      <DependentUpon>RagApi.ashx</DependentUpon>
+    </Compile>
     <Compile Include="Inc\UserCommon.ashx.cs">
       <DependentUpon>UserCommon.ashx</DependentUpon>
     </Compile>
@@ -924,6 +928,13 @@
     </Compile>
     <Compile Include="LiteratureInfo.aspx.designer.cs">
       <DependentUpon>LiteratureInfo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="LiteratureQA.aspx.cs">
+      <DependentUpon>LiteratureQA.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="LiteratureQA.aspx.designer.cs">
+      <DependentUpon>LiteratureQA.aspx</DependentUpon>
     </Compile>
     <Compile Include="LiteratureSearch.aspx.cs">
       <DependentUpon>LiteratureSearch.aspx</DependentUpon>
@@ -1123,6 +1134,7 @@
     <Content Include="fonts\iconfont.woff" />
     <Content Include="fonts\iconfont.woff2" />
     <Content Include="Inc\LiteratureGraph.ashx" />
+    <Content Include="Inc\RagApi.ashx" />
     <Content Include="Inc\UserCommon.ashx" />
     <Content Include="admin\iconfont\iconfont.json" />
     <Content Include="admin\iconfont\iconfont.ttf" />
