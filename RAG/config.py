@@ -9,10 +9,11 @@ import os
 os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
 os.environ.setdefault("CHROMA_TELEMETRY_IMPL", "none")
 
-# 尝试加载 .env 文件（python-dotenv 没装也不报错）
+# 尝试加载 .env 文件（python-dotenv 没装也不报错）。
+# 显式指定本文件同目录下的 .env，这样无论从哪个目录运行都能读到。
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 except Exception:
     pass
 

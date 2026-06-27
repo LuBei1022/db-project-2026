@@ -21,9 +21,15 @@ ASP.NET 网站只需通过 HTTP 调它的接口即可接入。
 | `backfill_index.py` | 一次性回填脚本：把已有论文灌进向量库 |
 | `pdf_parser.py` | PDF 全文提取（已有，回填全文时用） |
 
+> 说明：所有 Python 后端文件都在仓库的 `RAG/` 子目录里，下面命令请先 `cd RAG` 再执行。
+> 前端文件（ASP.NET 页面/接口）在 `网站源码/Web/` 里，见文末「前端」一节。
+
 ## 怎么跑起来
 
 ```bash
+# 0. 进入 RAG 目录
+cd RAG
+
 # 1. 装依赖
 pip install -r requirements.txt
 

@@ -20,7 +20,11 @@ import config            # noqa: E402
 import rag_utils         # noqa: E402
 from pdf_parser import extract_full_text_smart  # noqa: E402
 
-PDF_DIR = os.path.join("网站源码", "Web", "A_UpLoad", "upload_file")
+# PDF 目录在项目根目录下的 网站源码/...，本脚本在 RAG/ 子目录里，故往上退一级
+PDF_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..",
+    "网站源码", "Web", "A_UpLoad", "upload_file"
+)
 
 
 def parse_limit():
