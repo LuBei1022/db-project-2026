@@ -4,7 +4,6 @@
 覆盖文献上传、审核、检索、下载、收藏、积分、通知等全生命周期业务；并在此基础上
 扩展两项创新功能——基于 RAG 的语义检索与智能问答、基于知识图谱的文献关系可视化。
 
-> 在线演示：<https://there-funky-accuracy-camera.trycloudflare.com/>
 
 ---
 
@@ -119,7 +118,16 @@ db-project-2026/
 ### 主网站
 
 Visual Studio 打开 `网站源码/web.sln`，在 `Web/Web.config` 配置 `SQLCONNECTIONSTRING`，
-重新生成并运行。
+重新生成并运行（正式部署用 IIS，详见 [`网站源码/README.md`](网站源码/README.md)）。
+
+上传/批量导入会调用 PDF 元数据解析服务（`网站源码/app.py`，端口 5050）：
+
+```bash
+cd 网站源码 && python app.py
+```
+
+> 系统有两个独立 Python 服务：`网站源码/app.py`(5050) 解析上传文献的元数据；
+> `RAG/app.py`(5051) 提供智能问答。下面的 RAG 服务即指后者。
 
 ### RAG 服务（智能问答依赖）
 
