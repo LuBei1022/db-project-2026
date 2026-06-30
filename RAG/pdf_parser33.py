@@ -1167,7 +1167,7 @@ def clean_affiliation_list(items: Sequence[str], max_items: int = 12) -> List[st
 
 def marker_token_parts(text: str) -> List[str]:
     cleaned = normalize_marker_text(normalize_text(text or ""))
-    cleaned = re.sub(r"\(cid:\d+\)", " ", cleaned, fla gs=re.IGNORECASE)
+    cleaned = re.sub(r"\(cid:\d+\)", " ", cleaned, flags=re.IGNORECASE)
     return split_author_markers(cleaned)
 
 
