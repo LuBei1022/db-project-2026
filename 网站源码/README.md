@@ -22,9 +22,7 @@
 | `database/` | 数据库备份、完整结构 SQL、字段/索引/外键清单和表结构说明。 |
 | `docs/` | 项目说明、测试清单、依赖说明和详细项目文档。 |
 | `app.py` | 本机 PDF 元数据解析 HTTP 服务，默认监听 `127.0.0.1:5050`。 |
-| `app_llm_pdf.py` | LLM 辅助 PDF 元数据解析服务，可替代 `app.py` 使用同一 `/upload` 接口。 |
 | `pdf_parser.py` | PDF 元数据抽取核心脚本。 |
-| `start_pdf_llm_service.ps1` | 启动 LLM PDF 解析服务的 PowerShell 脚本。 |
 | `requirements.txt` | Python PDF 解析服务依赖。 |
 | `uploads/` | Python 解析服务运行时上传/缓存目录。 |
 | `packages/`、`bin/` | .NET 依赖包和已编译依赖。 |
