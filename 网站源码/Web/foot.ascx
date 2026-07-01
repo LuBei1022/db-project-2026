@@ -9,11 +9,11 @@
             <a href="javascript:void(0);" data-footer-modal="terms">条款</a>
             <a href="javascript:void(0);" data-footer-modal="support">支持</a>
         </div>
-        <p class="portal-foot-copy">© 2024 Academic Portal. Designed for Knowledge.</p>
+        <p class="portal-foot-copy">© 2026 Academic Portal. Designed for Knowledge.</p>
         <div class="footer-r portal-foot-social">
-            <a aria-label="twitter" href="javascript:void(0);">X</a>
-            <a aria-label="github" href="javascript:void(0);">●</a>
-            <a aria-label="linkedin" href="javascript:void(0);">in</a>
+            <% if (FooterGitHubVisible) { %>
+            <a aria-label="GitHub" href="<%=Server.HtmlEncode(FooterGitHubHref) %>" target="_blank" rel="noopener noreferrer"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.2.8-.6v-2.1c-3.3.7-4-1.4-4-1.4-.5-1.2-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 .1.6 2.7 3.5 1.9.1-.7.4-1.2.7-1.5-2.6-.3-5.4-1.3-5.4-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.4 5.9.4.4.8 1 .8 2v3c0 .4.2.7.8.6A12 12 0 0 0 12 .5Z"/></svg></a>
+            <% } %>
         </div>
     </div>
 </footer>
@@ -286,6 +286,9 @@
     }
     body.ac:not(.lit-home) .portal-foot-social a,
     body.front-glass .portal-foot-social a {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         color: #9ca3af !important;
         font-weight: 800 !important;
         line-height: 1 !important;

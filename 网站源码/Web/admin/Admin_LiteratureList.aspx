@@ -169,7 +169,7 @@
                                                 <td><%# GetInteractionStatsHtml(Eval("id"), Eval("like_count"), Eval("favorite_count"), Eval("comment_count")) %></td>
                                                     <td><div class="lit-time"><%# Function.ConvertTo<DateTime>(Eval("addtime").ToString(),DateTime.MinValue).ToString("yyyy-MM-dd") %><br /><%# Function.ConvertTo<DateTime>(Eval("addtime").ToString(),DateTime.MinValue).ToString("HH:mm:ss") %></div></td>
                                                     <td class="textAlignC">
-                                                        <div class="lit-actions-inline"><%# GetOperationHtml(Eval("id"), Eval("remark"), Eval("canonical_literature_id")) %></div>
+                                                        <div class="lit-actions-inline"><%# GetOperationHtml(Eval("id"), Eval("remark"), Eval("canonical_literature_id"), Eval("status")) %></div>
                                                     </td>
                                                 </tr>
                                             </ItemTemplate>

@@ -134,7 +134,9 @@ namespace Web.admin
             }
             else
             {
-                pageUrl = CommonFunc.GetModelUrl(mid.ToString()) + "?tbclass_id=" + cid + "&listid=" + GetChildrenId(cid) + "&MenuId=" + menuId;
+                pageUrl = string.IsNullOrWhiteSpace(CommonFunc.GetModelUrl(mid.ToString()))
+                    ? "Admin_SiteMenu.aspx?Action=EditColumn&ID=" + cid + "&ParentId=360&MenuId=" + menuId
+                    : CommonFunc.GetModelUrl(mid.ToString()) + "?tbclass_id=" + cid + "&listid=" + GetChildrenId(cid) + "&MenuId=" + menuId;
             }
 
             string return_url = ", url: \"" + pageUrl + "\", \"target\": \"menu_info\"";

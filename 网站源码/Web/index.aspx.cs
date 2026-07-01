@@ -52,15 +52,18 @@ namespace Web
 
         private void BindSparkline()
         {
+            DateTime startMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-11);
+            string startDateSql = startMonth.ToString("yyyy-MM-dd");
+            int runningTotal = literatureBll.GetCount("Literature", "status=1 and canonical_literature_id is null and addtime < '" + startDateSql + "'");
+
             DataTable dt = literatureBll.GetDatatable(@"
 select convert(char(7), addtime, 120) as month_key, count(1) as total_count
 from Literature
-where status=1 and canonical_literature_id is null and addtime >= dateadd(month,-11,dateadd(day,1-day(getdate()),convert(date,getdate())))
+where status=1 and canonical_literature_id is null and addtime >= '" + startDateSql + @"'
 group by convert(char(7), addtime, 120)
 order by month_key asc");
 
             int[] values = new int[12];
-            DateTime startMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-11);
             Dictionary<string, int> monthMap = new Dictionary<string, int>();
             if (dt != null)
             {
@@ -79,7 +82,8 @@ order by month_key asc");
             for (int i = 0; i < values.Length; i++)
             {
                 string key = startMonth.AddMonths(i).ToString("yyyy-MM");
-                values[i] = monthMap.ContainsKey(key) ? monthMap[key] : 0;
+                runningTotal += monthMap.ContainsKey(key) ? monthMap[key] : 0;
+                values[i] = runningTotal;
             }
 
             LiteratureSparklinePath = BuildSparklinePath(values, 100, 40);

@@ -96,7 +96,12 @@
             </asp:Panel>
         </div>
     </form>
+    <script src="/js/literature-text-normalizer.js" type="text/javascript"></script>
     <script type="text/javascript">
+        function normalizeAbstractText(value) {
+            return window.LiteratureTextNormalizer ? window.LiteratureTextNormalizer.normalizeAbstract(value) : (value || "");
+        }
+
         function setImportMode(mode) {
             var fileInput = document.getElementById("<%= import_file.ClientID %>");
             var label = document.getElementById("importFileLabel");
@@ -198,9 +203,48 @@
             var result = [];
             for (var i = 0; i < parts.length; i++) {
                 var current = parts[i].replace(/\s+/g, " ").trim();
+                if (/^(未匹配|待匹配|无|none|unmatched)$/i.test(current)) {
+                    continue;
+                }
                 if (current && result.indexOf(current) < 0) {
                     result.push(current);
                 }
+            }
+            return result;
+        }
+
+        function splitAuthorNameValues(value) {
+            var normalized = String(value || "").replace(/\s+(?:and|&)\s+/gi, ", ");
+            var parts = normalized.split(/[,，;；、|\n\r]+/);
+            var result = [];
+            for (var i = 0; i < parts.length; i++) {
+                var current = parts[i]
+                    .replace(/\s+/g, " ")
+                    .replace(/\s*(?:\d+(?:\s*[,，]\s*\d+)*|[*†‡§¶#]+)\s*$/g, "")
+                    .trim();
+                if (!/[A-Za-z\u4e00-\u9fff]/.test(current)) {
+                    continue;
+                }
+                if (current && result.indexOf(current) < 0) {
+                    result.push(current);
+                }
+            }
+            return result;
+        }
+
+        function namesToUnmatchedAuthorDetails(value) {
+            var names = splitAuthorNameValues(value);
+            var result = [];
+            for (var i = 0; i < names.length; i++) {
+                result.push({
+                    name: names[i],
+                    name_cn: containsChineseClient(names[i]) ? names[i] : "",
+                    name_en: containsChineseClient(names[i]) ? "" : names[i],
+                    affiliations: [],
+                    affiliation_text: "",
+                    markers: [],
+                    mapping_status: "unmatched"
+                });
             }
             return result;
         }
@@ -241,11 +285,22 @@
             return result;
         }
 
+        function pickAuthorDetailsFromParse(data) {
+            if (!data) return [];
+            var details = normalizeAuthorDetails(data.author_details);
+            if (details.length) return details;
+
+            var authors = normalizeAuthorDetails(data.authors);
+            if (authors.length) return authors;
+
+            return namesToUnmatchedAuthorDetails(data.author_names);
+        }
+
         function formatAuthorDetailsText(details) {
             var normalized = normalizeAuthorDetails(details);
             var lines = [];
             for (var i = 0; i < normalized.length; i++) {
-                lines.push(normalized[i].name + " => " + (normalized[i].affiliation_text || ""));
+                lines.push(normalized[i].name + " => " + (normalized[i].affiliation_text || "未匹配"));
             }
             return lines.join("\n");
         }
@@ -339,7 +394,7 @@
         }
 
         function applyParsedPreview(card, data) {
-            var authorDetails = (data && (data.author_details || data.authors)) || [];
+            var authorDetails = pickAuthorDetailsFromParse(data);
             try {
                 card.setAttribute("data-author-details", JSON.stringify(authorDetails));
             } catch (e) {
@@ -361,7 +416,7 @@
             setPreviewField(card, "pages", data.pages || "");
             setPreviewField(card, "publisher", data.publisher || "");
             setPreviewField(card, "keywords", data.keywords || "");
-            setPreviewField(card, "abstract_text", data.abstract_text || "");
+            setPreviewField(card, "abstract_text", normalizeAbstractText(data.abstract_text || ""));
             setPreviewField(card, "author_details_text", formatAuthorDetailsText(authorDetails));
         }
 
@@ -424,55 +479,78 @@
                 if (list) list.innerHTML = "";
                 if (payload) payload.value = "";
                 parseBtn.disabled = true;
-                var index = 0;
+                var nextIndex = 0;
+                var finishedCount = 0;
+                var activeCount = 0;
+                var batchConcurrency = 3;
                 var okCount = 0;
 
-                function next() {
-                    if (index >= files.length) {
-                        parseBtn.disabled = false;
-                        collectPdfPreviewPayload();
-                        setPdfParseStatus("&#35299;&#26512;&#23436;&#25104;&#65306;" + okCount + " / " + files.length + " &#20010;&#25104;&#21151;&#65292;&#35831;&#30830;&#35748;&#21518;&#23548;&#20837;", okCount === files.length ? "#168449" : "#b42318");
-                        return;
-                    }
-
-                    var file = files[index];
-                    var card = renderPdfPreviewCard(file);
-                    var name = (file.name || "").toLowerCase();
-                    if (name.lastIndexOf(".pdf") !== name.length - 4) {
-                        setPreviewState(card, "非 PDF", false);
-                        index++;
-                        next();
-                        return;
-                    }
-
-                    setPreviewState(card, "解析中", true);
-                    setPdfParseStatus("&#27491;&#22312;&#35299;&#26512; " + (index + 1) + " / " + files.length + "...", "#666");
-                    var formData = new FormData();
-                    formData.append("file", file);
-                    var xhr = new XMLHttpRequest();
-                    xhr.open("POST", "/admin/PdfParse.ashx", true);
-                    xhr.onreadystatechange = function () {
-                        if (xhr.readyState !== 4) return;
-                        var data = null;
-                        try {
-                            data = JSON.parse(xhr.responseText || "{}");
-                        } catch (e) {
-                            data = null;
-                        }
-                        if (xhr.status === 200 && data && data.success === true) {
-                            applyParsedPreview(card, data);
-                            setPreviewState(card, "已解析", true);
-                            okCount++;
-                        } else {
-                            setPreviewState(card, (data && data.message) ? data.message : "解析失败", false);
-                        }
-                        index++;
-                        next();
-                    };
-                    xhr.send(formData);
+                function updatePdfParseProgress() {
+                    setPdfParseStatus("正在解析 " + finishedCount + " / " + files.length + "，进行中 " + activeCount + " / " + batchConcurrency + "...", "#666");
                 }
 
-                next();
+                function finishPdfParse() {
+                    parseBtn.disabled = false;
+                    collectPdfPreviewPayload();
+                    setPdfParseStatus("&#35299;&#26512;&#23436;&#25104;&#65306;" + okCount + " / " + files.length + " &#20010;&#25104;&#21151;&#65292;&#35831;&#30830;&#35748;&#21518;&#23548;&#20837;", okCount === files.length ? "#168449" : "#b42318");
+                }
+
+                function launchNext() {
+                    if (finishedCount >= files.length) {
+                        finishPdfParse();
+                        return;
+                    }
+
+                    while (activeCount < batchConcurrency && nextIndex < files.length) {
+                        (function (currentIndex) {
+                            var file = files[currentIndex];
+                            var card = renderPdfPreviewCard(file);
+                            var name = (file.name || "").toLowerCase();
+                            nextIndex++;
+
+                            if (name.lastIndexOf(".pdf") !== name.length - 4) {
+                                setPreviewState(card, "非 PDF", false);
+                                finishedCount++;
+                                launchNext();
+                                return;
+                            }
+
+                            activeCount++;
+                            setPreviewState(card, "解析中", true);
+                            updatePdfParseProgress();
+                            var formData = new FormData();
+                            formData.append("file", file);
+                            var xhr = new XMLHttpRequest();
+                            xhr.open("POST", "/admin/PdfParse.ashx", true);
+                            xhr.onreadystatechange = function () {
+                                if (xhr.readyState !== 4) return;
+                                var data = null;
+                                try {
+                                    data = JSON.parse(xhr.responseText || "{}");
+                                } catch (e) {
+                                    data = null;
+                                }
+                                if (xhr.status === 200 && data && data.success === true) {
+                                    applyParsedPreview(card, data);
+                                    setPreviewState(card, "已解析", true);
+                                    okCount++;
+                                } else {
+                                    setPreviewState(card, (data && data.message) ? data.message : "解析失败", false);
+                                }
+                                activeCount--;
+                                finishedCount++;
+                                launchNext();
+                            };
+                            xhr.send(formData);
+                        })(nextIndex);
+                    }
+
+                    if (finishedCount < files.length) {
+                        updatePdfParseProgress();
+                    }
+                }
+
+                launchNext();
                 return false;
             };
         })();

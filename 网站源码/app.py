@@ -132,7 +132,8 @@ class PdfParseHandler(BaseHTTPRequestHandler):
                 continue
             content = content.rsplit(b"\r\n", 1)[0]
             filename = "upload.pdf"
-            for header_part in header.decode("utf-8", "ignore").split(";"):
+            disposition = header.decode("utf-8", "ignore").split("\r\n", 1)[0]
+            for header_part in disposition.split(";"):
                 header_part = header_part.strip()
                 if header_part.startswith("filename="):
                     filename = header_part.split("=", 1)[1].strip('"') or filename

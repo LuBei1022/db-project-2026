@@ -13,7 +13,12 @@
         .lit-author-affiliation-hint { color:#6b7280; font-size:13px; line-height:1.7; margin-top:8px; }
         .lit-master-row { display:flex; gap:8px; align-items:center; }
         .lit-master-row .txt { flex:1; min-width:0; }
-        .lit-master-row a { white-space:nowrap; }
+        .lit-master-row .btn { white-space:nowrap; }
+        .lit-master-picker { display:none; margin-top:8px; border:1px solid #d7e0ea; border-radius:8px; background:#fff; max-height:220px; overflow:auto; box-shadow:0 12px 24px rgba(15,23,42,.08); }
+        .lit-master-picker.open { display:block; }
+        .lit-master-picker button { display:block; width:100%; border:0; background:#fff; padding:9px 12px; text-align:left; color:#1f2937; cursor:pointer; border-bottom:1px solid #eef2f7; }
+        .lit-master-picker button:hover { background:#f3f7ff; color:#0d6efd; }
+        .lit-master-picker .empty { padding:10px 12px; color:#6b7280; }
         @media (max-width:760px) {
             .lit-author-affiliation-row { grid-template-columns:1fr; }
             .lit-master-row { align-items:stretch; flex-direction:column; }
@@ -133,16 +138,18 @@
                                             <label class="form-label">&#26399;&#21002;&#21517;&#31216;</label>
                                             <div class="lit-master-row">
                                                 <asp:TextBox ID="journal_name" runat="server" CssClass="txt form-control"></asp:TextBox>
-                                                <a class="btn btn-secondary" href="Admin_JournalList.aspx?MenuId=1732" target="_blank">&#26399;&#21002;&#24211;</a>
+                                                <button type="button" id="btnJournalPicker" class="btn btn-secondary">&#26399;&#21002;&#24211;</button>
                                             </div>
+                                            <div id="journalMasterPicker" class="lit-master-picker"></div>
                                             <div class="lit-author-affiliation-hint">&#21487;&#30452;&#25509;&#36755;&#20837;&#65292;&#20063;&#21487;&#20174;&#26399;&#21002;&#24211;&#20505;&#36873;&#20013;&#36873;&#25321;&#12290;</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">&#20250;&#35758;&#21517;&#31216;</label>
                                             <div class="lit-master-row">
                                                 <asp:TextBox ID="conference_name" runat="server" CssClass="txt form-control"></asp:TextBox>
-                                                <a class="btn btn-secondary" href="Admin_ConferenceList.aspx?MenuId=1733" target="_blank">&#20250;&#35758;&#24211;</a>
+                                                <button type="button" id="btnConferencePicker" class="btn btn-secondary">&#20250;&#35758;&#24211;</button>
                                             </div>
+                                            <div id="conferenceMasterPicker" class="lit-master-picker"></div>
                                             <div class="lit-author-affiliation-hint">&#21487;&#30452;&#25509;&#36755;&#20837;&#65292;&#20063;&#21487;&#20174;&#20250;&#35758;&#24211;&#20505;&#36873;&#20013;&#36873;&#25321;&#12290;</div>
                                         </div>
                                     </div>
@@ -261,10 +268,15 @@
             </asp:Panel>
         </div>
     </form>
+    <script src="/js/literature-text-normalizer.js" type="text/javascript"></script>
     <script type="text/javascript">
         var adminInstitutionOptions = <%=InstitutionOptionsJson %>;
         var adminJournalOptions = <%=JournalOptionsJson %>;
         var adminConferenceOptions = <%=ConferenceOptionsJson %>;
+
+        function normalizeAbstractText(value) {
+            return window.LiteratureTextNormalizer ? window.LiteratureTextNormalizer.normalizeAbstract(value) : (value || "");
+        }
 
         function normalizeMasterOptionName(value) {
             return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
@@ -277,8 +289,93 @@
                 if (normalizeMasterOptionName(options[i].name) === key) {
                     return options[i];
                 }
+                var aliases = options[i].aliases || [];
+                for (var j = 0; j < aliases.length; j++) {
+                    if (normalizeMasterOptionName(aliases[j]) === key) {
+                        return options[i];
+                    }
+                }
             }
             return null;
+        }
+
+        function masterOptionSearchText(option) {
+            if (!option) return "";
+            var values = [option.name || ""];
+            var aliases = option.aliases || [];
+            for (var i = 0; i < aliases.length; i++) values.push(aliases[i] || "");
+            return normalizeMasterOptionName(values.join(" "));
+        }
+
+        function getMasterPickerConfig(type) {
+            if (type === "journal") {
+                return {
+                    options: adminJournalOptions || [],
+                    inputId: "<%= journal_name.ClientID %>",
+                    hiddenId: "<%= journal_id_payload.ClientID %>",
+                    pickerId: "journalMasterPicker"
+                };
+            }
+            return {
+                options: adminConferenceOptions || [],
+                inputId: "<%= conference_name.ClientID %>",
+                hiddenId: "<%= conference_id_payload.ClientID %>",
+                pickerId: "conferenceMasterPicker"
+            };
+        }
+
+        function renderMasterPicker(type) {
+            var cfg = getMasterPickerConfig(type);
+            var picker = document.getElementById(cfg.pickerId);
+            var input = document.getElementById(cfg.inputId);
+            if (!picker || !input) return;
+
+            var keyword = normalizeMasterOptionName(input.value);
+            var html = "";
+            var count = 0;
+            var used = {};
+            for (var i = 0; i < cfg.options.length && count < 80; i++) {
+                var option = cfg.options[i];
+                if (!option || !option.name) continue;
+                var normalized = normalizeMasterOptionName(option.name);
+                var dedupeKey = "id:" + option.id;
+                if (!normalized || used[dedupeKey]) continue;
+                if (keyword && masterOptionSearchText(option).indexOf(keyword) < 0) continue;
+                used[dedupeKey] = true;
+                var aliasTitle = (option.aliases && option.aliases.length) ? option.aliases.join(" / ") : option.name;
+                html += "<button type=\"button\" title=\"" + escapeAdminAuthorHtml(aliasTitle) + "\" data-master-type=\"" + type + "\" data-master-id=\"" + option.id + "\" data-master-name=\"" + escapeAdminAuthorHtml(option.name) + "\">" + escapeAdminAuthorHtml(option.name) + "</button>";
+                count++;
+            }
+            picker.innerHTML = html || "<div class=\"empty\">暂无匹配候选，可继续手动输入。</div>";
+        }
+
+        function openMasterPicker(type) {
+            var cfg = getMasterPickerConfig(type);
+            var picker = document.getElementById(cfg.pickerId);
+            if (!picker) return;
+            closeMasterPickers(type);
+            renderMasterPicker(type);
+            picker.className = "lit-master-picker open";
+        }
+
+        function closeMasterPickers(exceptType) {
+            if (exceptType !== "journal") {
+                var journalPicker = document.getElementById("journalMasterPicker");
+                if (journalPicker) journalPicker.className = "lit-master-picker";
+            }
+            if (exceptType !== "conference") {
+                var conferencePicker = document.getElementById("conferenceMasterPicker");
+                if (conferencePicker) conferencePicker.className = "lit-master-picker";
+            }
+        }
+
+        function selectMasterOption(type, name, id) {
+            var cfg = getMasterPickerConfig(type);
+            var input = document.getElementById(cfg.inputId);
+            var hidden = document.getElementById(cfg.hiddenId);
+            if (input) input.value = name || "";
+            if (hidden) hidden.value = id || "";
+            closeMasterPickers("");
         }
 
         function syncJournalMasterSelection() {
@@ -295,6 +392,18 @@
             if (!input || !hidden) return;
             var item = findMasterOption(adminConferenceOptions, input.value);
             hidden.value = item ? item.id : "";
+        }
+
+        function onJournalMasterInput() {
+            syncJournalMasterSelection();
+            var picker = document.getElementById("journalMasterPicker");
+            if (picker && picker.className.indexOf("open") >= 0) renderMasterPicker("journal");
+        }
+
+        function onConferenceMasterInput() {
+            syncConferenceMasterSelection();
+            var picker = document.getElementById("conferenceMasterPicker");
+            if (picker && picker.className.indexOf("open") >= 0) renderMasterPicker("conference");
         }
 
         function appendAuthorInstitutionFromPicker(picker) {
@@ -351,6 +460,9 @@
             var result = [];
             for (var i = 0; i < parts.length; i++) {
                 var current = parts[i].replace(/\s+/g, " ").trim();
+                if (/^(未匹配|待匹配|无|none|unmatched)$/i.test(current)) {
+                    continue;
+                }
                 if (current && result.indexOf(current) < 0) {
                     result.push(current);
                 }
@@ -359,13 +471,37 @@
         }
 
         function splitAdminAuthorNames(value) {
-            var parts = String(value || "").split(/[,，;；、|]+/);
+            var normalized = String(value || "").replace(/\s+(?:and|&)\s+/gi, ", ");
+            var parts = normalized.split(/[,，;；、|\n\r]+/);
             var result = [];
             for (var i = 0; i < parts.length; i++) {
-                var current = parts[i].replace(/\s+/g, " ").trim();
+                var current = parts[i]
+                    .replace(/\s+/g, " ")
+                    .replace(/\s*(?:\d+(?:\s*[,，]\s*\d+)*|[*†‡§¶#]+)\s*$/g, "")
+                    .trim();
+                if (!/[A-Za-z\u4e00-\u9fff]/.test(current)) {
+                    continue;
+                }
                 if (current && result.indexOf(current) < 0) {
                     result.push(current);
                 }
+            }
+            return result;
+        }
+
+        function namesToUnmatchedAdminAuthorDetails(value) {
+            var names = splitAdminAuthorNames(value);
+            var result = [];
+            for (var i = 0; i < names.length; i++) {
+                result.push({
+                    author_id: 0,
+                    name: names[i],
+                    name_cn: containsAdminChinese(names[i]) ? names[i] : "",
+                    name_en: containsAdminChinese(names[i]) ? "" : names[i],
+                    affiliations: [],
+                    affiliation_text: "",
+                    mapping_status: "unmatched"
+                });
             }
             return result;
         }
@@ -406,6 +542,17 @@
             return result;
         }
 
+        function pickAdminAuthorDetailsFromParse(data) {
+            if (!data) return [];
+            var details = normalizeAdminAuthorDetails(data.author_details);
+            if (details.length) return details;
+
+            var authors = normalizeAdminAuthorDetails(data.authors);
+            if (authors.length) return authors;
+
+            return namesToUnmatchedAdminAuthorDetails(data.author_names);
+        }
+
         function renderAdminAuthorDetails(details) {
             var editor = document.getElementById("authorAffiliationEditor");
             if (!editor) return;
@@ -423,7 +570,7 @@
                 row.innerHTML =
                     "<input type=\"text\" data-author-name=\"1\" value=\"" + escapeAdminAuthorHtml(normalized[i].name) + "\" placeholder=\"作者姓名\" />" +
                     "<input type=\"text\" data-author-affiliation-picker=\"1\" list=\"institutionMasterList\" placeholder=\"从机构库选择（可选）\" />" +
-                    "<textarea data-author-affiliation=\"1\" placeholder=\"可直接输入该作者在本文中的机构；多个机构用分号分隔\">" + escapeAdminAuthorHtml(normalized[i].affiliation_text || "") + "</textarea>";
+                    "<textarea data-author-affiliation=\"1\" placeholder=\"未匹配，可直接输入该作者在本文中的机构；多个机构用分号分隔\">" + escapeAdminAuthorHtml(normalized[i].affiliation_text || "") + "</textarea>";
                 editor.appendChild(row);
             }
             bindAuthorInstitutionPickers();
@@ -596,10 +743,11 @@
                     syncJournalMasterSelection();
                     syncConferenceMasterSelection();
                     setValue("<%= keywords.ClientID %>", data.keywords);
-                    setValue("<%= abstract_text.ClientID %>", data.abstract_text);
+                    setValue("<%= abstract_text.ClientID %>", normalizeAbstractText(data.abstract_text));
                     setValue("<%= source_type.ClientID %>", data.source_type);
-                    setAdminAuthorDetailsPayload(data.author_details || data.authors || []);
-                    renderAdminAuthorDetails(data.author_details || data.authors || []);
+                    var pickedAuthorDetails = pickAdminAuthorDetailsFromParse(data);
+                    setAdminAuthorDetailsPayload(pickedAuthorDetails);
+                    renderAdminAuthorDetails(pickedAuthorDetails);
                     if (data.source_type) {
                         var sourceEl = document.getElementById("<%= source_type.ClientID %>");
                         if (sourceEl) {
@@ -625,13 +773,60 @@
         (function () {
             var journalInput = document.getElementById("<%= journal_name.ClientID %>");
             if (journalInput) {
-                journalInput.oninput = syncJournalMasterSelection;
-                journalInput.onchange = syncJournalMasterSelection;
+                journalInput.oninput = onJournalMasterInput;
+                journalInput.onchange = onJournalMasterInput;
             }
             var conferenceInput = document.getElementById("<%= conference_name.ClientID %>");
             if (conferenceInput) {
-                conferenceInput.oninput = syncConferenceMasterSelection;
-                conferenceInput.onchange = syncConferenceMasterSelection;
+                conferenceInput.oninput = onConferenceMasterInput;
+                conferenceInput.onchange = onConferenceMasterInput;
+            }
+            var journalButton = document.getElementById("btnJournalPicker");
+            if (journalButton) {
+                journalButton.onclick = function () {
+                    openMasterPicker("journal");
+                    return false;
+                };
+            }
+            var conferenceButton = document.getElementById("btnConferencePicker");
+            if (conferenceButton) {
+                conferenceButton.onclick = function () {
+                    openMasterPicker("conference");
+                    return false;
+                };
+            }
+            document.onclick = function (event) {
+                event = event || window.event;
+                var target = event.target || event.srcElement;
+                while (target) {
+                    if (target.id === "btnJournalPicker" || target.id === "btnConferencePicker" || target.id === "journalMasterPicker" || target.id === "conferenceMasterPicker") {
+                        return;
+                    }
+                    target = target.parentNode;
+                }
+                closeMasterPickers("");
+            };
+            var journalPicker = document.getElementById("journalMasterPicker");
+            if (journalPicker) {
+                journalPicker.onclick = function (event) {
+                    event = event || window.event;
+                    var target = event.target || event.srcElement;
+                    if (target && target.getAttribute && target.getAttribute("data-master-type")) {
+                        selectMasterOption(target.getAttribute("data-master-type"), target.getAttribute("data-master-name"), target.getAttribute("data-master-id"));
+                    }
+                    return false;
+                };
+            }
+            var conferencePicker = document.getElementById("conferenceMasterPicker");
+            if (conferencePicker) {
+                conferencePicker.onclick = function (event) {
+                    event = event || window.event;
+                    var target = event.target || event.srcElement;
+                    if (target && target.getAttribute && target.getAttribute("data-master-type")) {
+                        selectMasterOption(target.getAttribute("data-master-type"), target.getAttribute("data-master-name"), target.getAttribute("data-master-id"));
+                    }
+                    return false;
+                };
             }
             bindAuthorInstitutionPickers();
             syncJournalMasterSelection();

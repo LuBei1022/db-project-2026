@@ -587,7 +587,7 @@ namespace DAL
                 string datetime = DateTime.Now.ToString("yyyyMMddHHmmssffff_");
                 conn.Open();//连接数据库
                 SqlTransaction transaction;//开始一个本地事务
-                transaction = conn.BeginTransaction();//必须为SqlCommand指定数据库连接和登记的事务
+                transaction = conn.BeginTransaction();
                 SqlCommand cmd = new SqlCommand("", conn, transaction);
 #pragma warning disable CS0168 // 声明了变量，但从未使用过
                 try

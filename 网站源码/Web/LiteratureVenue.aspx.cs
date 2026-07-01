@@ -11,7 +11,6 @@ namespace Web
     public partial class LiteratureVenue : System.Web.UI.Page
     {
         private readonly BLLBase<Literature> literatureBll = new BLLBase<Literature>();
-        private readonly BLLBase<LiteratureVenueProfile> profileBll = new BLLBase<LiteratureVenueProfile>();
         public string Type = "all";
         public string ActiveType = "all";
         public string Venue = string.Empty;
@@ -58,8 +57,10 @@ namespace Web
 
         private string GetVenueSql()
         {
-            string journalSql = "select N'journal' as venue_type, LTRIM(RTRIM(journal_name)) as venue_name, count(1) as lit_count from Literature where status=1 and canonical_literature_id is null and LTRIM(RTRIM(isnull(journal_name,N'')))<>N'' group by LTRIM(RTRIM(journal_name))";
-            string conferenceSql = "select N'conference' as venue_type, LTRIM(RTRIM(conference_name)) as venue_name, count(1) as lit_count from Literature where status=1 and canonical_literature_id is null and LTRIM(RTRIM(isnull(conference_name,N'')))<>N'' group by LTRIM(RTRIM(conference_name))";
+            string journalNameSql = VenueFieldSql("l.journal_name");
+            string conferenceNameSql = VenueFieldSql("l.conference_name");
+            string journalSql = "select N'journal' as venue_type, " + journalNameSql + " as venue_name, count(1) as lit_count from Literature l where l.status=1 and l.canonical_literature_id is null and " + journalNameSql + "<>N'' and " + ActiveVenueCondition("journal", "l", journalNameSql) + " group by " + journalNameSql;
+            string conferenceSql = "select N'conference' as venue_type, " + conferenceNameSql + " as venue_name, count(1) as lit_count from Literature l where l.status=1 and l.canonical_literature_id is null and " + conferenceNameSql + "<>N'' and " + ActiveVenueCondition("conference", "l", conferenceNameSql) + " group by " + conferenceNameSql;
             string source;
             if (Type == "journal")
             {
@@ -132,7 +133,8 @@ namespace Web
             }
 
             string field = Type == "journal" ? "journal_name" : "conference_name";
-            string safeVenue = SqlLiteral(Venue.Trim());
+            string safeVenue = SqlLiteral(NormalizeVenueName(Venue));
+            string fieldSql = VenueFieldSql("l." + field);
             string sql = @"
 select top 100
     l.id,
@@ -142,12 +144,14 @@ select top 100
     l.source_type,
     l.abstract_text
 from Literature l
-where l.status=1 and l.canonical_literature_id is null and LTRIM(RTRIM(isnull(l." + field + @",N'')))=N'" + safeVenue + @"'
+where l.status=1 and l.canonical_literature_id is null and " + fieldSql + @"=N'" + safeVenue + @"'
+  and " + ActiveVenueCondition(Type, "l", fieldSql) + @"
 order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
             DataTable dt = literatureBll.GetDatatable(sql);
             int count = dt != null ? dt.Rows.Count : 0;
-            SelectedVenueTitleHtml = Server.HtmlEncode(Venue);
+            SelectedVenueTitleHtml = Server.HtmlEncode(NormalizeVenueName(Venue));
             SelectedVenueSummaryHtml = (Type == "journal" ? "&#26399;&#21002;" : "&#20250;&#35758;") + " · &#24403;&#21069;&#26174;&#31034; " + count + " &#31687;&#20844;&#24320;&#25991;&#29486;";
+            SelectedVenueSummaryHtml = SelectedVenueSummaryHtml.Replace(" \u8DEF ", " &middot; ");
             VenueInfoHtml = BuildVenueInfoHtml(field, safeVenue, count);
             LiteratureListHtml = BuildLiteratureListHtml(dt);
             if (dt != null)
@@ -158,17 +162,21 @@ order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
 
         private string BuildVenueInfoHtml(string field, string safeVenue, int visibleCount)
         {
-            LiteratureVenueProfile profile = profileBll.SelectSingle("status<>-1 and venue_type=N'" + SqlLiteral(Type) + "' and venue_name=N'" + safeVenue + "'");
-            string condition = "status=1 and canonical_literature_id is null and LTRIM(RTRIM(isnull(" + field + ",N'')))=N'" + safeVenue + "'";
+            VenueMasterInfo masterInfo = GetVenueMasterInfo(field, safeVenue);
+            string condition = "status=1 and canonical_literature_id is null and " + VenueFieldSql(field) + "=N'" + safeVenue + "' and " + ActiveVenueCondition(Type, string.Empty, VenueFieldSql(field));
             int totalCount = GetScalarInt("select count(1) from Literature where " + condition);
             string minYear = GetScalarText("select cast(min(publish_year) as nvarchar(20)) from Literature where " + condition + " and publish_year is not null");
             string maxYear = GetScalarText("select cast(max(publish_year) as nvarchar(20)) from Literature where " + condition + " and publish_year is not null");
-            string publisher = ProfileValue(profile, "publisher", GetTopValue("publisher", condition));
+            string publisher = FirstNonEmpty(masterInfo.Publisher, GetTopValue("publisher", condition));
             string sourceDb = GetTopValue("source_db", condition);
             string sourceTypes = GetTopGroupedValues("source_type", condition, 4);
             string tags = GetTopTags(field, safeVenue, 6);
             string yearRange = !string.IsNullOrWhiteSpace(minYear) && !string.IsNullOrWhiteSpace(maxYear) ? (minYear == maxYear ? maxYear : minYear + " - " + maxYear) : "&#26242;&#26080;";
-            string introduction = ProfileValue(profile, "introduction", string.Empty);
+            string introduction = string.Empty;
+            string issnOrLocation = Type == "journal"
+                ? masterInfo.Issn
+                : JoinMeta(masterInfo.Cycle, masterInfo.Location);
+            string websiteUrl = masterInfo.Website;
 
             StringBuilder html = new StringBuilder();
             html.Append("<section class=\"venue-info-card\"><div class=\"venue-info-intro\"><h3>&#26469;&#28304;&#31616;&#20171;</h3><p>");
@@ -182,11 +190,87 @@ order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
             AppendInfoItem(html, "&#26469;&#28304;&#24211;", SafeHtml(sourceDb));
             AppendInfoItem(html, "&#25991;&#29486;&#31867;&#22411;", SafeHtml(sourceTypes));
             AppendInfoItem(html, "&#30456;&#20851;&#26631;&#31614;", SafeHtml(tags));
-            AppendInfoItem(html, Type == "journal" ? "&#24433;&#21709;/&#24341;&#29992;&#22240;&#23376;" : "&#20250;&#35758;&#31561;&#32423;/&#24433;&#21709;&#21147;", SafeHtml(Type == "journal" ? ProfileValue(profile, "impact_factor", string.Empty) : ProfileValue(profile, "conference_level", string.Empty)));
-            AppendInfoItem(html, Type == "journal" ? "ISSN / &#20998;&#21306;" : "&#20250;&#35758;&#21608;&#26399;/&#22320;&#28857;", SafeHtml(Type == "journal" ? JoinMeta(ProfileValue(profile, "issn", string.Empty), ProfileValue(profile, "jcr_quartile", string.Empty)) : JoinMeta(ProfileValue(profile, "conference_cycle", string.Empty), ProfileValue(profile, "location", string.Empty))));
-            AppendInfoItem(html, "&#23448;&#32593;", BuildWebsiteHtml(ProfileValue(profile, "website_url", string.Empty)));
+            AppendInfoItem(html, Type == "journal" ? "ISSN / EISSN" : "&#20250;&#35758;&#26085;&#26399;/&#22320;&#28857;", SafeHtml(issnOrLocation));
+            AppendInfoItem(html, "&#23448;&#32593;", BuildWebsiteHtml(websiteUrl));
             html.Append("</div></section>");
             return html.ToString();
+        }
+
+        private VenueMasterInfo GetVenueMasterInfo(string field, string safeVenue)
+        {
+            return Type == "journal" ? GetJournalMasterInfo(field, safeVenue) : GetConferenceMasterInfo(field, safeVenue);
+        }
+
+        private VenueMasterInfo GetConferenceMasterInfo(string field, string safeVenue)
+        {
+            string sql = @"
+select top 1 c.organizer,c.country,c.city,c.start_date,c.end_date,c.website
+from Literature l
+inner join Conference c on c.id=l.conference_id and c.status<>-1
+where l.status=1 and l.canonical_literature_id is null
+  and " + VenueFieldSql("l." + field) + @"=N'" + safeVenue + @"'
+order by c.status desc,c.updatetime desc,c.id desc";
+            DataTable dt = literatureBll.GetDatatable(sql);
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                if (dt != null)
+                {
+                    dt.Dispose();
+                }
+                dt = literatureBll.GetDatatable(@"
+select top 1 c.organizer,c.country,c.city,c.start_date,c.end_date,c.website
+from Conference c
+where c.status<>-1 and (c.acronym=N'" + safeVenue + @"' or c.name_cn=N'" + safeVenue + @"' or c.name_en=N'" + safeVenue + @"')
+order by c.status desc,c.updatetime desc,c.id desc");
+            }
+
+            VenueMasterInfo info = new VenueMasterInfo();
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                DataRow row = dt.Rows[0];
+                info.Publisher = Function.HtmlDiscode(Convert.ToString(row["organizer"]));
+                info.Location = JoinMeta(Function.HtmlDiscode(Convert.ToString(row["country"])), Function.HtmlDiscode(Convert.ToString(row["city"])));
+                info.Cycle = BuildDateRange(row["start_date"], row["end_date"]);
+                info.Website = Function.HtmlDiscode(Convert.ToString(row["website"]));
+                dt.Dispose();
+            }
+            return info;
+        }
+
+        private VenueMasterInfo GetJournalMasterInfo(string field, string safeVenue)
+        {
+            string sql = @"
+select top 1 j.publisher,j.country,j.issn,j.eissn,j.website
+from Literature l
+inner join Journal j on j.id=l.journal_id and j.status<>-1
+where l.status=1 and l.canonical_literature_id is null
+  and " + VenueFieldSql("l." + field) + @"=N'" + safeVenue + @"'
+order by j.status desc,j.updatetime desc,j.id desc";
+            DataTable dt = literatureBll.GetDatatable(sql);
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                if (dt != null)
+                {
+                    dt.Dispose();
+                }
+                dt = literatureBll.GetDatatable(@"
+select top 1 j.publisher,j.country,j.issn,j.eissn,j.website
+from Journal j
+where j.status<>-1 and (j.name_cn=N'" + safeVenue + @"' or j.name_en=N'" + safeVenue + @"')
+order by j.status desc,j.updatetime desc,j.id desc");
+            }
+
+            VenueMasterInfo info = new VenueMasterInfo();
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                DataRow row = dt.Rows[0];
+                info.Publisher = Function.HtmlDiscode(Convert.ToString(row["publisher"]));
+                info.Location = Function.HtmlDiscode(Convert.ToString(row["country"]));
+                info.Issn = JoinMeta(Function.HtmlDiscode(Convert.ToString(row["issn"])), Function.HtmlDiscode(Convert.ToString(row["eissn"])));
+                info.Website = Function.HtmlDiscode(Convert.ToString(row["website"]));
+                dt.Dispose();
+            }
+            return info;
         }
 
         private void AppendInfoItem(StringBuilder html, string label, string value)
@@ -264,7 +348,8 @@ order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
 
         private string GetTopTags(string field, string safeVenue, int top)
         {
-            string sql = "select top " + top + " t.name,count(1) as num from Literature l inner join LiteratureTagMap m on m.literature_id=l.id inner join LiteratureTag t on t.id=m.tag_id where l.status=1 and l.canonical_literature_id is null and t.status<>-1 and LTRIM(RTRIM(isnull(l." + field + ",N'')))=N'" + safeVenue + "' group by t.name order by num desc,t.name asc";
+            string fieldSql = VenueFieldSql("l." + field);
+            string sql = "select top " + top + " t.name,count(1) as num from Literature l inner join LiteratureTagMap m on m.literature_id=l.id inner join LiteratureTag t on t.id=m.tag_id where l.status=1 and l.canonical_literature_id is null and t.status<>-1 and " + fieldSql + "=N'" + safeVenue + "' and " + ActiveVenueCondition(Type, "l", fieldSql) + " group by t.name order by num desc,t.name asc";
             DataTable dt = literatureBll.GetDatatable(sql);
             string result = BuildNameCountList(dt, "name");
             if (dt != null)
@@ -310,37 +395,72 @@ order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
             {
                 return "&#26242;&#26080;";
             }
-            string safeUrl = Server.HtmlEncode(url);
-            return "<a href=\"" + safeUrl + "\" target=\"_blank\" rel=\"noopener\">" + safeUrl + "</a>";
-        }
-
-        private string ProfileValue(LiteratureVenueProfile profile, string field, string fallback)
-        {
-            if (profile == null || profile.id <= 0)
-            {
-                return fallback;
-            }
-            string value = string.Empty;
-            switch (field)
-            {
-                case "introduction": value = profile.introduction; break;
-                case "impact_factor": value = profile.impact_factor; break;
-                case "jcr_quartile": value = profile.jcr_quartile; break;
-                case "issn": value = profile.issn; break;
-                case "conference_level": value = profile.conference_level; break;
-                case "conference_cycle": value = profile.conference_cycle; break;
-                case "location": value = profile.location; break;
-                case "website_url": value = profile.website_url; break;
-                case "publisher": value = profile.publisher; break;
-            }
-            value = Function.HtmlDiscode(value);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            string cleanUrl = url.Trim();
+            string href = cleanUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || cleanUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                ? cleanUrl
+                : "https://" + cleanUrl;
+            return "<a href=\"" + Server.HtmlEncode(href) + "\" target=\"_blank\" rel=\"noopener\">" + Server.HtmlEncode(cleanUrl) + "</a>";
         }
 
         private string NormalizeType(string rawType)
         {
             string value = (rawType ?? string.Empty).Trim().ToLowerInvariant();
             return value == "journal" || value == "conference" ? value : "all";
+        }
+
+        private string ActiveVenueCondition(string venueType, string literatureAlias, string venueNameSql)
+        {
+            if (venueType == "journal")
+            {
+                string journalId = LiteratureColumn(literatureAlias, "journal_id");
+                return @"exists(
+                        select 1 from Journal j
+                        where j.status<>-1
+                          and (
+                              j.id=" + journalId + @"
+                              or " + VenueFieldSql("j.name_cn") + @"=" + venueNameSql + @"
+                              or " + VenueFieldSql("j.name_en") + @"=" + venueNameSql + @"
+                          )
+                    )";
+            }
+
+            if (venueType == "conference")
+            {
+                string conferenceId = LiteratureColumn(literatureAlias, "conference_id");
+                return @"exists(
+                        select 1 from Conference c
+                        where c.status<>-1
+                          and (
+                              c.id=" + conferenceId + @"
+                              or " + VenueFieldSql("c.acronym") + @"=" + venueNameSql + @"
+                              or " + VenueFieldSql("c.name_cn") + @"=" + venueNameSql + @"
+                              or " + VenueFieldSql("c.name_en") + @"=" + venueNameSql + @"
+                          )
+                    )";
+            }
+
+            return "1=1";
+        }
+
+        private string LiteratureColumn(string literatureAlias, string column)
+        {
+            return string.IsNullOrWhiteSpace(literatureAlias) ? column : literatureAlias + "." + column;
+        }
+
+        private string NormalizeVenueName(string value)
+        {
+            string text = Function.HtmlDiscode(value ?? string.Empty)
+                .Replace("&nbsp;", " ")
+                .Replace('\u00A0', ' ')
+                .Replace('\u2002', ' ')
+                .Replace('\u2003', ' ');
+            return System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+        }
+
+        private string VenueFieldSql(string field)
+        {
+            return "LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(isnull(" + field + ",N''),N'&nbsp;',N' '),NCHAR(160),N' '),NCHAR(12288),N' ')))";
         }
 
         private string JoinMeta(params string[] values)
@@ -361,6 +481,33 @@ order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
             return sb.Length == 0 ? "\u6682\u65E0\u5143\u6570\u636E" : sb.ToString();
         }
 
+        private string FirstNonEmpty(params string[] values)
+        {
+            foreach (string value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+            return string.Empty;
+        }
+
+        private string BuildDateRange(object start, object end)
+        {
+            DateTime startDate = Function.ConvertTo<DateTime>(Convert.ToString(start), DateTime.MinValue);
+            DateTime endDate = Function.ConvertTo<DateTime>(Convert.ToString(end), DateTime.MinValue);
+            if (startDate == DateTime.MinValue && endDate == DateTime.MinValue)
+            {
+                return string.Empty;
+            }
+            if (startDate != DateTime.MinValue && endDate != DateTime.MinValue)
+            {
+                return startDate.ToString("yyyy-MM-dd") + " - " + endDate.ToString("yyyy-MM-dd");
+            }
+            return (startDate != DateTime.MinValue ? startDate : endDate).ToString("yyyy-MM-dd");
+        }
+
         private string TrimText(string value, int maxLength)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -374,6 +521,15 @@ order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
         private string SqlLiteral(string value)
         {
             return (value ?? string.Empty).Replace("'", "''");
+        }
+
+        private class VenueMasterInfo
+        {
+            public string Publisher { get; set; }
+            public string Cycle { get; set; }
+            public string Location { get; set; }
+            public string Website { get; set; }
+            public string Issn { get; set; }
         }
     }
 }

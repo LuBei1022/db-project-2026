@@ -147,7 +147,7 @@ from
         l.id,
         l.title,
         (select string_agg(coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N''),N'未命名作者'),N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
-        l.institution,
+        " + ActiveInstitutionNamesSql("l") + @" as institution,
         l.publish_year,
         l.source_type,
         l.download_points,
@@ -323,7 +323,7 @@ select top 100
     l.id,
     l.title,
     (select string_agg(coalesce(nullif(a.name_cn,N''),nullif(a.name_en,N''),N'未命名作者'),N'，') within group (order by m.author_order) from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id) as author_names,
-    l.institution,
+    " + ActiveInstitutionNamesSql("l") + @" as institution,
     l.publish_year,
     l.source_type,
     l.abstract_text,
@@ -417,7 +417,7 @@ order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 string safeKeyword = SqlLiteral(Function.HtmlEncode(keyword.Trim()));
-                where += " and (l.title like N'%" + safeKeyword + "%' or l.institution like N'%" + safeKeyword + "%' or l.keywords like N'%" + safeKeyword + "%' or l.doi like N'%" + safeKeyword + "%' or l.journal_name like N'%" + safeKeyword + "%' or l.conference_name like N'%" + safeKeyword + "%' or exists(select 1 from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id and (a.name_cn like N'%" + safeKeyword + "%' or a.name_en like N'%" + safeKeyword + "%')) or exists(select 1 from LiteratureTagMap tm inner join LiteratureTag t on t.id=tm.tag_id where tm.literature_id=l.id and t.name like N'%" + safeKeyword + "%'))";
+                where += " and (l.title like N'%" + safeKeyword + "%' or " + ActiveInstitutionKeywordSql("l", safeKeyword) + " or l.keywords like N'%" + safeKeyword + "%' or l.doi like N'%" + safeKeyword + "%' or l.journal_name like N'%" + safeKeyword + "%' or l.conference_name like N'%" + safeKeyword + "%' or exists(select 1 from LiteratureAuthorMap m inner join Author a on a.id=m.author_id where m.literature_id=l.id and (a.name_cn like N'%" + safeKeyword + "%' or a.name_en like N'%" + safeKeyword + "%')) or exists(select 1 from LiteratureTagMap tm inner join LiteratureTag t on t.id=tm.tag_id where tm.literature_id=l.id and t.name like N'%" + safeKeyword + "%'))";
             }
             if (HasCategoryFilter)
             {
@@ -428,6 +428,74 @@ order by l.is_top desc,l.publish_year desc,l.addtime desc,l.id desc";
                 where += " and l.publish_year=" + selectedYear;
             }
             return where;
+        }
+
+        private string ActiveInstitutionNamesSql(string literatureAlias)
+        {
+            string aimAffiliation = NormalizeInstitutionSql("aim.affiliation_text");
+            string deletedNameCn = NormalizeInstitutionSql("deletedInst.name_cn");
+            string deletedNameEn = NormalizeInstitutionSql("deletedInst.name_en");
+            return @"(
+            select string_agg(src.institution_name,N'；')
+            from
+            (
+                select distinct
+                    coalesce(
+                        nullif(i.name_cn,N''),
+                        nullif(i.name_en,N''),
+                        case
+                            when isnull(aim.institution_id,0)=0 and not exists(
+                                select 1 from Institution deletedInst
+                                where deletedInst.status=-1
+                                  and (
+                                      " + aimAffiliation + @"=" + deletedNameCn + @"
+                                      or " + aimAffiliation + @"=" + deletedNameEn + @"
+                                  )
+                            )
+                            then nullif(aim.affiliation_text,N'')
+                        end
+                    ) as institution_name
+                from LiteratureAuthorInstitutionMap aim
+                left join Institution i on i.id=aim.institution_id and i.status<>-1
+                where aim.literature_id=" + literatureAlias + @".id
+            ) src
+            where LTRIM(RTRIM(isnull(src.institution_name,N'')))<>N''
+        )";
+        }
+
+        private string ActiveInstitutionKeywordSql(string literatureAlias, string safeKeyword)
+        {
+            string likeSql = "N'%" + safeKeyword + "%'";
+            string aimAffiliation = NormalizeInstitutionSql("aim.affiliation_text");
+            string deletedNameCn = NormalizeInstitutionSql("deletedInst.name_cn");
+            string deletedNameEn = NormalizeInstitutionSql("deletedInst.name_en");
+            return @"exists(
+                select 1
+                from LiteratureAuthorInstitutionMap aim
+                left join Institution i on i.id=aim.institution_id and i.status<>-1
+                where aim.literature_id=" + literatureAlias + @".id
+                  and (
+                      i.name_cn like " + likeSql + @"
+                      or i.name_en like " + likeSql + @"
+                      or (
+                          isnull(aim.institution_id,0)=0
+                          and aim.affiliation_text like " + likeSql + @"
+                          and not exists(
+                              select 1 from Institution deletedInst
+                              where deletedInst.status=-1
+                                and (
+                                    " + aimAffiliation + @"=" + deletedNameCn + @"
+                                    or " + aimAffiliation + @"=" + deletedNameEn + @"
+                                )
+                          )
+                      )
+                  )
+            )";
+        }
+
+        private string NormalizeInstitutionSql(string field)
+        {
+            return "LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(isnull(" + field + ",N''),N'&nbsp;',N' '),NCHAR(160),N' '),NCHAR(12288),N' ')))";
         }
 
         private string SqlLiteral(string value)
@@ -646,7 +714,7 @@ order by num desc,venue_name asc";
             {
                 return string.Empty;
             }
-            StringBuilder sb = new StringBuilder();
+            StringBuilder items = new StringBuilder();
             foreach (DataRow row in dt.Rows)
             {
                 string name = Function.HtmlDiscode(Convert.ToString(row[nameField]));
@@ -654,15 +722,17 @@ order by num desc,venue_name asc";
                 {
                     continue;
                 }
-                if (sb.Length > 0)
+                if (items.Length > 0)
                 {
-                    sb.Append(" / ");
+                    items.Append(" <span class=\"lit-count-separator\">/</span> ");
                 }
-                sb.Append(name);
-                sb.Append(" ");
-                sb.Append(Function.ConvertTo<int>(Convert.ToString(row["num"]), 0));
+                items.Append("<span class=\"lit-count-item\"><span class=\"lit-count-name\">");
+                items.Append(Server.HtmlEncode(name));
+                items.Append("</span><em class=\"lit-count-badge\">");
+                items.Append(Function.ConvertTo<int>(Convert.ToString(row["num"]), 0));
+                items.Append("</em></span>");
             }
-            return sb.ToString();
+            return items.Length > 0 ? "<span class=\"lit-count-list\">" + items.ToString() + "</span>" : string.Empty;
         }
 
         private void AppendBrowseInfoItem(StringBuilder html, string label, string value)
@@ -676,7 +746,25 @@ order by num desc,venue_name asc";
 
         private string SafeHtml(string value)
         {
-            return string.IsNullOrWhiteSpace(value) ? "暂无" : Server.HtmlEncode(value);
+            return string.IsNullOrWhiteSpace(value) ? "暂无" : value;
+        }
+
+        public string GetSearchGraphApiUrl()
+        {
+            string url = "/Inc/LiteratureGraph.ashx?scope=public";
+            if (HasCategoryFilter && selectedCategoryId > 0)
+            {
+                url += "&category_id=" + Server.UrlEncode(GetCategoryOptionValue(selectedCategoryId));
+            }
+            return Server.HtmlEncode(url);
+        }
+
+        public string GetSearchGraphDescription()
+        {
+            string text = HasCategoryFilter && selectedCategoryId > 0
+                ? "展示当前分类下公开文献与作者、机构、期刊会议之间的关系。"
+                : "展示全部公开文献与作者、机构、分类、期刊会议之间的关系。";
+            return Server.HtmlEncode(text);
         }
 
         public string GetAllCategoryNavUrl()

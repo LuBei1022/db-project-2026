@@ -182,23 +182,26 @@
         .quick-chevron { margin-left: auto; opacity: 0; color: #9ca3af; transition: opacity .18s ease; }
         .quick-link:hover .quick-chevron { opacity: 1; }
         .discovery-list { display: grid; gap: 24px; }
-        .discovery-item { display: flex; gap: 16px; color: inherit; cursor: pointer; }
-        .discovery-img { width: 80px; height: 80px; flex: 0 0 80px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
-        .discovery-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
-        .discovery-item:hover img { transform: scale(1.1); }
-        .discovery-text { min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 4px 0; }
+        .discovery-item { display: block; color: inherit; cursor: pointer; }
+        .discovery-text { min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 2px 0; }
         .discovery-text strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #111827; font-size: 14px; line-height: 1.35; font-weight: 600; transition: color .18s ease; }
         .discovery-item:hover strong { color: #2563eb; }
         .discovery-text span { margin-top: 4px; color: #6b7280; font-size: 11px; }
         .discovery-text small { color: #9ca3af; font-size: 10px; font-weight: 500; text-transform: uppercase; }
-        .research-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px; }
-        .research-card .portal-card-title { position: absolute; top: 24px; left: 24px; width: 100%; text-align: left; }
-        .research-avatar { width: 96px; height: 96px; border-radius: 999px; overflow: hidden; margin-bottom: 24px; border: 4px solid #fff; box-shadow: 0 10px 15px -3px rgba(0,0,0,.1); outline: 1px solid #f3f4f6; }
-        .research-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .research-card h4 { margin: 0; color: #111827; font-size: 20px; font-weight: 700; }
-        .research-card .role { margin: 5px 0 16px; color: #3b82f6; font-size: 12px; font-weight: 600; }
-        .research-card p { max-width: 200px; margin: 0; color: #6b7280; font-size: 12px; line-height: 1.65; }
-        .research-more { margin-top: 24px; border: 0; background: transparent; color: #111827; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .qa-card { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 220px; color: inherit; text-decoration: none; padding: 28px; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+        .qa-card:hover { transform: translateY(-3px); border-color: rgba(59,130,246,.34); background: rgba(255,255,255,.52); }
+        .qa-card-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .qa-card .portal-card-title { margin: 0; }
+        .qa-mark { width: 52px; height: 52px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: #111827; box-shadow: 0 16px 32px rgba(17,24,39,.16); }
+        .qa-status { display: inline-flex; align-items: center; gap: 6px; color: #059669; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .qa-status:before { content: ""; width: 7px; height: 7px; border-radius: 999px; background: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,.12); }
+        .qa-card h4 { margin: 24px 0 8px; color: #111827; font-size: 22px; line-height: 1.18; font-weight: 800; letter-spacing: 0; }
+        .qa-card p { margin: 0; color: #5b6472; font-size: 13px; line-height: 1.7; }
+        .qa-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+        .qa-pill { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 999px; color: #2563eb; background: rgba(59,130,246,.1); font-size: 11px; font-weight: 700; }
+        .qa-action { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; color: #111827; font-size: 13px; font-weight: 800; }
+        .qa-arrow { width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: #2563eb; transition: transform .18s ease, background .18s ease; }
+        .qa-card:hover .qa-arrow { transform: translateX(3px); background: #1d4ed8; }
         .portal-footer {
             position: fixed !important;
             left: 50% !important;
@@ -220,8 +223,8 @@
         .portal-footer-links { display: flex; align-items: center; gap: 22px; color: #6b7280; font-size: 12px; font-weight: 500; }
         .portal-footer-links a { color: #6b7280; }
         .portal-social { display: flex; align-items: center; gap: 14px; }
-        .portal-social button { border: 0; background: transparent; color: #9ca3af; cursor: pointer; padding: 4px; transition: color .18s ease; }
-        .portal-social button:hover { color: #000; }
+        .portal-social a { display: inline-flex; align-items: center; justify-content: center; color: #9ca3af; padding: 4px; transition: color .18s ease; }
+        .portal-social a:hover { color: #000; }
         .portal-copy { margin: 0; color: #9ca3af; text-align: center; font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; white-space: nowrap; }
         .lit-home footer:not(.portal-footer) { display: none; }
         @media (max-width: 1100px) { .portal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -315,7 +318,6 @@
                         <asp:Repeater ID="FeaturedLiteratureList" runat="server">
                             <ItemTemplate>
                                 <a class="discovery-item" href="/LiteratureInfo.aspx?id=<%# Eval("id") %>">
-                                    <span class="discovery-img"><img src="/images/news-card-<%# (Container.ItemIndex % 4) + 1 %>.svg" alt="" /></span>
                                     <span class="discovery-text">
                                         <strong><%# Function.HtmlDiscode(Eval("title").ToString()) %></strong>
                                         <span>By <%# GetShortAuthor(Eval("author_names")) %></span>
@@ -327,14 +329,28 @@
                     </div>
                 </div>
 
-                <div class="portal-card glass research-card">
-                    <h3 class="portal-card-title">&#30740;&#31350;&#20142;&#28857;</h3>
-                    <div class="research-avatar"><img src="/images/maotouying.jpg" alt="Researcher" /></div>
-                    <h4>&#25512;&#33616;&#30740;&#31350;</h4>
-                    <div class="role">Featured Researcher</div>
-                    <p>&#19987;&#27880;&#20110;&#23398;&#26415;&#25991;&#29486;&#31649;&#29702;&#19982;&#30740;&#31350;&#21457;&#29616;&#65292;&#25345;&#32493;&#25512;&#33616;&#39640;&#20215;&#20540;&#20844;&#24320;&#25991;&#29486;&#12290;</p>
-                    <button type="button" class="research-more" onclick="window.location.href='/LiteratureSearch.aspx'">&#26597;&#30475;&#30740;&#31350; ↗</button>
-                </div>
+                <a class="portal-card glass qa-card" href="/LiteratureQA.aspx">
+                    <div class="qa-card-top">
+                        <h3 class="portal-card-title">&#26234;&#33021;&#38382;&#31572;</h3>
+                        <span class="qa-status">RAG</span>
+                    </div>
+                    <div>
+                        <span class="qa-mark" aria-hidden="true">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M4 6.5A3.5 3.5 0 0 1 7.5 3h9A3.5 3.5 0 0 1 20 6.5v6A3.5 3.5 0 0 1 16.5 16H12l-4.6 4.2A.8.8 0 0 1 6 19.6V16A3.5 3.5 0 0 1 4 12.5v-6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 8h8M8 11.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        </span>
+                        <h4>&#25991;&#29486;&#26234;&#33021;&#38382;&#31572;</h4>
+                        <p>&#36830;&#25509;&#24050;&#32034;&#24341;&#25991;&#29486;&#65292;&#24555;&#36895;&#26597;&#25214;&#31572;&#26696;&#19982;&#20381;&#25454;&#12290;</p>
+                        <div class="qa-pills">
+                            <span class="qa-pill">&#25688;&#35201;</span>
+                            <span class="qa-pill">DOI</span>
+                            <span class="qa-pill">&#20316;&#32773;</span>
+                        </div>
+                    </div>
+                    <div class="qa-action">
+                        <span>&#36827;&#20837; RAG &#38382;&#31572;</span>
+                        <span class="qa-arrow" aria-hidden="true">&#8594;</span>
+                    </div>
+                </a>
             </section>
 
             <footer class="portal-footer">
@@ -346,12 +362,9 @@
                         <a href="javascript:void(0);" data-footer-modal="terms">&#26465;&#27454;</a>
                         <a href="javascript:void(0);" data-footer-modal="support">&#25903;&#25345;</a>
                     </div>
-                    <div class="portal-copy">© 2024 Academic Portal. Designed for Knowledge.</div>
+                    <div class="portal-copy">© 2026 Academic Portal. Designed for Knowledge.</div>
                     <div class="portal-social">
-                        <button type="button" aria-label="twitter"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-6.8 7.8 8 10.2h-6.3l-4.9-6.4L6.4 20H3.3l7.3-8.3L3 2h6.5l4.4 5.8L18.9 2Z"/></svg></button>
-                        <button type="button" aria-label="github"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.2.8-.6v-2.1c-3.3.7-4-1.4-4-1.4-.5-1.2-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 .1.6 2.7 3.5 1.9.1-.7.4-1.2.7-1.5-2.6-.3-5.4-1.3-5.4-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.4 5.9.4.4.8 1 .8 2v3c0 .4.2.7.8.6A12 12 0 0 0 12 .5Z"/></svg></button>
-                        <button type="button" aria-label="linkedin"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3V9Zm7 0h3.8v1.7h.1c.5-1 1.8-2 3.7-2 4 0 4.7 2.6 4.7 6V21h-4v-5.6c0-1.3 0-3-1.9-3s-2.2 1.4-2.2 2.9V21h-4V9Z"/></svg></button>
-                        <button type="button" aria-label="instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg></button>
+                        <a aria-label="GitHub" href="https://github.com/LuBei1022/db-project-2026/" target="_blank" rel="noopener noreferrer"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.2.8-.6v-2.1c-3.3.7-4-1.4-4-1.4-.5-1.2-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 .1.6 2.7 3.5 1.9.1-.7.4-1.2.7-1.5-2.6-.3-5.4-1.3-5.4-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.4 5.9.4.4.8 1 .8 2v3c0 .4.2.7.8.6A12 12 0 0 0 12 .5Z"/></svg></a>
                     </div>
                 </div>
             </footer>

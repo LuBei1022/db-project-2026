@@ -15,6 +15,7 @@ namespace Model
         public string current_institution_precision { get; set; }
         public string identity_status { get; set; }
         public int? merge_group_id { get; set; }
+        public int? merged_to_author_id { get; set; }
         public string orcid { get; set; }
         public string email { get; set; }
         public int status { get; set; }

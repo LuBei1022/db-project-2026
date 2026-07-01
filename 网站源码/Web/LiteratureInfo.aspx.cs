@@ -58,7 +58,7 @@ namespace Web
             int id = Function.ConvertTo<int>(Function.GetRequest("id"), 0);
             user_list currentUser = CommonUserFunc.GetUserLoginStatus();
             IsLogin = currentUser != null && currentUser.id > 0;
-            Literature literature = literatureBll.SelectSingle("id=" + id + " and status in(1,3)");
+            Literature literature = literatureBll.SelectSingle("id=" + id + " and status in(" + LiteratureStatus.Published + "," + LiteratureStatus.DuplicateMerged + ")");
             if ((literature == null || literature.id <= 0) && currentUser != null && currentUser.id > 0)
             {
                 literature = literatureBll.SelectSingle("id=" + id + " and userid=" + currentUser.id);
@@ -75,7 +75,7 @@ namespace Web
                 return;
             }
             int appliedRevisionMasterId = GetAppliedMetadataMasterId(literature.remark);
-            if (literature.status == 4 && appliedRevisionMasterId > 0 && appliedRevisionMasterId != literature.id)
+            if (literature.status == LiteratureStatus.MetadataApplied && appliedRevisionMasterId > 0 && appliedRevisionMasterId != literature.id)
             {
                 Response.Redirect("/LiteratureInfo.aspx?id=" + appliedRevisionMasterId, false);
                 Context.ApplicationInstance.CompleteRequest();
@@ -105,14 +105,14 @@ namespace Web
             title = Safe(Function.HtmlDiscode(literature.title), "\u672A\u547D\u540D\u6587\u732E");
             pageTitle = title;
             doi = Safe(Function.HtmlDiscode(literature.doi), "\u6682\u65E0");
-            institution = Safe(Function.HtmlDiscode(literature.institution), "\u6682\u65E0");
+            institution = Safe(GetActiveInstitutionSummary(literature.id), "\u6682\u65E0");
             authorInstitutionHtml = GetAuthorInstitutionHtml(literature.id);
             journalName = Safe(Function.HtmlDiscode(literature.journal_name), "\u6682\u65E0");
             conferenceName = Safe(Function.HtmlDiscode(literature.conference_name), "\u6682\u65E0");
             keywords = Safe(Function.HtmlDiscode(literature.keywords), "\u6682\u65E0");
             tags = Safe(LiteratureRelationSync.GetTagNames(literature.id), "\u6682\u65E0");
             pages = Safe(Function.HtmlDiscode(literature.pages), "\u6682\u65E0");
-            publisher = Safe(Function.HtmlDiscode(literature.publisher), "\u6682\u65E0");
+            publisher = Safe(NormalizePublisherDisplay(Function.HtmlDiscode(literature.publisher)), "\u6682\u65E0");
             sourceDb = Safe(Function.HtmlDiscode(literature.source_db), "\u6682\u65E0");
             abstractText = Safe(Function.HtmlDiscode(literature.abstract_text), "\u6682\u65E0\u6458\u8981");
             remark = Safe(Function.HtmlDiscode(literature.remark), "\u6682\u65E0\u5907\u6CE8");
@@ -157,7 +157,8 @@ namespace Web
                 pdfLinkHtml = "<span class=\"disabled\">\u6682\u65E0\u53EF\u4E0B\u8F7D\u9644\u4EF6</span>";
             }
 
-            commentSectionHtml = GetCommentSectionHtml(literature.id, currentUser);
+            int canonicalLiteratureId = GetCanonicalLiteratureId(literature);
+            commentSectionHtml = GetCommentSectionHtml(literature.id, canonicalLiteratureId, currentUser);
         }
 
         private int GetCanonicalLiteratureId(Literature literature)
@@ -170,7 +171,7 @@ namespace Web
             {
                 return literature.canonical_literature_id.Value;
             }
-            return literature.status == 3 ? GetMergedMasterLiteratureId(literature.remark) : 0;
+            return literature.status == LiteratureStatus.DuplicateMerged ? GetMergedMasterLiteratureId(literature.remark) : 0;
         }
 
         private string GetReactionToolsHtml(int currentLiteratureId, user_list currentUser)
@@ -220,7 +221,7 @@ namespace Web
         private string GetOwnerPanelHtml(Literature literature)
         {
             string statusText = GetOwnerStatusText(literature.status);
-            string statusClass = literature.status == 1 ? "ok" : literature.status == 2 ? "reject" : literature.status == 3 ? "merged" : "pending";
+            string statusClass = literature.status == LiteratureStatus.Published ? "ok" : literature.status == LiteratureStatus.Rejected ? "reject" : literature.status == LiteratureStatus.DuplicateMerged ? "merged" : "pending";
             StringBuilder html = new StringBuilder();
             html.Append("<section class=\"lit-owner-panel\"><div class=\"lit-owner-panel-head\"><div><span>\u6295\u7A3F\u7BA1\u7406</span><strong>");
             html.Append(statusText);
@@ -278,7 +279,7 @@ namespace Web
             revision.source_db = original.source_db;
             revision.remark = Function.HtmlEncode(MetadataRevisionRemarkPrefix + original.id + "\uFF1B\u7528\u6237\u4E8C\u6B21\u63D0\u4EA4\u5143\u6570\u636E\u4FEE\u6539\uFF0C\u5BA1\u6838\u901A\u8FC7\u540E\u5E94\u7528\u5230\u539F\u6587\u732E\u3002");
             revision.is_top = 0;
-            revision.status = 0;
+            revision.status = LiteratureStatus.PendingReview;
             revision.userid = currentUser.id;
             revision.addtime = DateTime.Now;
             revision.updatetime = DateTime.Now;
@@ -301,7 +302,7 @@ namespace Web
         private bool HasPendingMetadataRevision(int literatureId, int userId)
         {
             string marker = Function.HtmlEncode(MetadataRevisionRemarkPrefix + literatureId).Replace("'", "''");
-            return literatureBll.Exists("userid=" + userId + " and status=0 and remark like N'" + marker + "%'");
+            return literatureBll.Exists("userid=" + userId + " and status=" + LiteratureStatus.PendingReview + " and remark like N'" + marker + "%'");
         }
 
         private string ApplyPublicationDate(Literature literature, string yearText, string monthText, string dayText)
@@ -416,7 +417,7 @@ select
     coalesce(
         nullif(
             stuff((
-                select N'；' + coalesce(nullif(i.name_cn,N''), nullif(i.name_en,N''), nullif(aim.affiliation_text,N''))
+                select N'；' + coalesce(nullif(i.name_cn,N''), nullif(i.name_en,N''), " + ActiveAffiliationFallbackSql("aim.affiliation_text", "isnull(aim.institution_id,0)=0") + @")
                 from LiteratureAuthorInstitutionMap aim
                 left join Institution i on i.id=aim.institution_id and i.status<>-1
                 where aim.literature_author_map_id=m.id
@@ -426,7 +427,7 @@ select
             ).value('.','nvarchar(max)'),1,1,N''),
             N''
         ),
-        nullif(m.affiliation_text,N''),
+        " + ActiveAffiliationFallbackSql("m.affiliation_text", string.Empty) + @",
         N''
     ) as institution_names
 from LiteratureAuthorMap m
@@ -554,49 +555,43 @@ order by m.author_order,m.id");
 
         private string GetOwnerStatusText(int status)
         {
-            if (status == 1)
-            {
-                return "\u5DF2\u901A\u8FC7";
-            }
-            if (status == 2)
-            {
-                return "\u5DF2\u9A73\u56DE";
-            }
-            if (status == 3)
-            {
-                return "\u5DF2\u5408\u5E76";
-            }
-            return "\u5F85\u5BA1\u6838";
+            return LiteratureStatus.GetText(status);
         }
 
         private string GetOwnerStatusTip(int status)
         {
-            if (status == 1)
+            if (status == LiteratureStatus.Published)
             {
                 return "\u8FD9\u7BC7\u6587\u732E\u5DF2\u516C\u5F00\u5C55\u793A\uFF0C\u4F60\u53EF\u4EE5\u50CF\u8BFB\u8005\u4E00\u6837\u67E5\u770B\u5F15\u7528\u3001\u8BC4\u8BBA\u548C\u9644\u4EF6\u4E0B\u8F7D\u60C5\u51B5\u3002";
             }
-            if (status == 2)
+            if (status == LiteratureStatus.Rejected)
             {
                 return "\u8FD9\u7BC7\u6587\u732E\u6682\u672A\u901A\u8FC7\u5BA1\u6838\uFF0C\u8BF7\u6839\u636E\u5907\u6CE8\u6216\u901A\u77E5\u5185\u5BB9\u8865\u5145\u6750\u6599\u540E\u91CD\u65B0\u63D0\u4EA4\u3002";
             }
-            if (status == 3)
+            if (status == LiteratureStatus.DuplicateMerged)
             {
                 return "\u8FD9\u6B21\u6295\u7A3F\u5DF2\u4E0E\u5E73\u53F0\u5DF2\u6709\u6587\u732E\u5408\u5E76\uFF0C\u540E\u7EED\u5C06\u5171\u7528\u540C\u4E00\u4E2A\u516C\u5F00\u8BE6\u60C5\u9875\u3002";
+            }
+            if (status == LiteratureStatus.MetadataApplied)
+            {
+                return "\u8FD9\u6B21\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u5BA1\u6838\u901A\u8FC7\u5E76\u5E94\u7528\u5230\u539F\u6587\u732E\u3002";
             }
             return "\u8FD9\u7BC7\u6587\u732E\u6B63\u5728\u7B49\u5F85\u540E\u53F0\u5BA1\u6838\uFF0C\u5BA1\u6838\u524D\u4EC5\u4F60\u672C\u4EBA\u53EF\u89C1\u3002";
         }
 
         private string GetStatusNoticeHtml(int status)
         {
-            if (status == 1)
+            if (status == LiteratureStatus.Published)
             {
                 return string.Empty;
             }
 
-            string text = status == 3
+            string text = status == LiteratureStatus.DuplicateMerged
                 ? "\u8BE5\u6295\u7A3F\u5DF2\u5BA1\u6838\u901A\u8FC7\u5E76\u4E0E\u5E73\u53F0\u5DF2\u6709\u6587\u732E\u5408\u5E76\uFF0C\u5C06\u5171\u7528\u539F\u6587\u732E\u8BE6\u60C5\u9875\u3002"
-                : status == 2
+                : status == LiteratureStatus.Rejected
                 ? "\u8BE5\u6587\u732E\u5DF2\u88AB\u9A73\u56DE\uFF0C\u8BF7\u6839\u636E\u901A\u77E5\u6216\u540E\u53F0\u53CD\u9988\u4FEE\u6539\u540E\u91CD\u65B0\u63D0\u4EA4\u3002"
+                : status == LiteratureStatus.MetadataApplied
+                ? "\u8BE5\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u88AB\u5BA1\u6838\u5E76\u5E94\u7528\u5230\u539F\u6587\u732E\u3002"
                 : "\u8BE5\u6587\u732E\u6B63\u5728\u5F85\u5BA1\u6838\u72B6\u6001\uFF0C\u4EC5\u60A8\u53EF\u4EE5\u67E5\u770B\uFF0C\u5BA1\u6838\u901A\u8FC7\u540E\u624D\u4F1A\u516C\u5F00\u5C55\u793A\u3002";
             return "<div class=\"lit-status-notice\">" + text + "</div>";
         }
@@ -882,6 +877,24 @@ order by m.author_order,m.id");
             return string.IsNullOrWhiteSpace(value) ? fallback : Server.HtmlEncode(value);
         }
 
+        private string NormalizePublisherDisplay(string value)
+        {
+            return IsPreprintRepository(value) ? "预印本" : value;
+        }
+
+        private bool IsPreprintRepository(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            string normalized = value.Trim().TrimEnd('.').Replace(" ", string.Empty);
+            return string.Equals(normalized, "arXiv", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "arxiv.org", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "预印本", StringComparison.OrdinalIgnoreCase);
+        }
+
         private string FormatPublishDate(Literature literature)
         {
             if (literature == null || !literature.publish_year.HasValue || literature.publish_year.Value <= 0)
@@ -899,6 +912,57 @@ order by m.author_order,m.id");
             return literature.publish_year.Value.ToString("0000") + "-" + literature.publish_month.Value.ToString("00") + "-" + literature.publish_day.Value.ToString("00");
         }
 
+        private string GetActiveInstitutionSummary(int currentLiteratureId)
+        {
+            DataTable dt = literatureBll.GetDatatable(@"
+select string_agg(src.institution_name,N'；') as institution_names
+from
+(
+    select distinct
+        coalesce(
+            nullif(i.name_cn,N''),
+            nullif(i.name_en,N''),
+            " + ActiveAffiliationFallbackSql("aim.affiliation_text", "isnull(aim.institution_id,0)=0") + @"
+        ) as institution_name
+    from LiteratureAuthorInstitutionMap aim
+    left join Institution i on i.id=aim.institution_id and i.status<>-1
+    where aim.literature_id=" + currentLiteratureId + @"
+) src
+where LTRIM(RTRIM(isnull(src.institution_name,N'')))<>N''");
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            string result = Function.HtmlDiscode(Convert.ToString(dt.Rows[0]["institution_names"]));
+            dt.Dispose();
+            return result;
+        }
+
+        private string ActiveAffiliationFallbackSql(string affiliationField, string extraCondition)
+        {
+            string normalizedAffiliation = NormalizeInstitutionSql(affiliationField);
+            string normalizedDeletedCn = NormalizeInstitutionSql("deletedInst.name_cn");
+            string normalizedDeletedEn = NormalizeInstitutionSql("deletedInst.name_en");
+            string conditionPrefix = string.IsNullOrWhiteSpace(extraCondition) ? string.Empty : extraCondition + " and ";
+            return @"case
+            when " + conditionPrefix + @"not exists(
+                select 1 from Institution deletedInst
+                where deletedInst.status=-1
+                  and (
+                      " + normalizedAffiliation + @"=" + normalizedDeletedCn + @"
+                      or " + normalizedAffiliation + @"=" + normalizedDeletedEn + @"
+                  )
+            )
+            then nullif(" + affiliationField + @",N'')
+        end";
+        }
+
+        private string NormalizeInstitutionSql(string field)
+        {
+            return "LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(isnull(" + field + ",N''),N'&nbsp;',N' '),NCHAR(160),N' '),NCHAR(12288),N' ')))";
+        }
+
         private string GetAuthorInstitutionHtml(int currentLiteratureId)
         {
             DataTable dt = literatureBll.GetDatatable(@"
@@ -907,7 +971,7 @@ select
     coalesce(
         nullif(
             stuff((
-                select N'；' + coalesce(nullif(i.name_cn,N''), nullif(i.name_en,N''), nullif(aim.affiliation_text,N''))
+                select N'；' + coalesce(nullif(i.name_cn,N''), nullif(i.name_en,N''), " + ActiveAffiliationFallbackSql("aim.affiliation_text", "isnull(aim.institution_id,0)=0") + @")
                 from LiteratureAuthorInstitutionMap aim
                 left join Institution i on i.id=aim.institution_id and i.status<>-1
                 where aim.literature_author_map_id=m.id
@@ -917,7 +981,7 @@ select
             ).value('.','nvarchar(max)'),1,1,N''),
             N''
         ),
-        nullif(m.affiliation_text,N''),
+        " + ActiveAffiliationFallbackSql("m.affiliation_text", string.Empty) + @",
         N''
     ) as institution_names
 from LiteratureAuthorMap m
@@ -1267,16 +1331,20 @@ order by m.author_order,m.id");
             value = value.Trim();
             return value.EndsWith(".") ? value : value + ".";
         }
-        private string GetCommentSectionHtml(int currentLiteratureId, user_list currentUser)
+        private string GetCommentSectionHtml(int currentLiteratureId, int canonicalLiteratureId, user_list currentUser)
         {
             int currentUserId = currentUser != null ? currentUser.id : 0;
+            int queryLiteratureId = canonicalLiteratureId > 0 ? canonicalLiteratureId : currentLiteratureId;
+            string literatureCondition = currentLiteratureId == queryLiteratureId
+                ? "(canonical_literature_id=" + currentLiteratureId + " or literature_id=" + currentLiteratureId + ")"
+                : "(canonical_literature_id in(" + currentLiteratureId + "," + queryLiteratureId + ") or literature_id in(" + currentLiteratureId + "," + queryLiteratureId + "))";
             string sql = @"
 select top 50 id,content as comment_text,addtime,userid
 from LiteratureComment
 where parent_id=0
   and is_deleted=0
   and status=1
-  and (canonical_literature_id=" + currentLiteratureId + @" or literature_id=" + currentLiteratureId + @")
+  and " + literatureCondition + @"
 order by updatetime desc,addtime desc,id desc";
             DataTable commentDt = literatureCommentBll.GetDatatable(sql);
 

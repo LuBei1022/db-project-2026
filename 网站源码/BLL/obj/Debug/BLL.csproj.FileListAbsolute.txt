@@ -1,0 +1,13 @@
+E:\数据库pj完整源码_最终交付版\BLL\bin\Debug\BLL.dll
+E:\数据库pj完整源码_最终交付版\BLL\bin\Debug\BLL.pdb
+E:\数据库pj完整源码_最终交付版\BLL\bin\Debug\DAL.dll
+E:\数据库pj完整源码_最终交付版\BLL\bin\Debug\Model.dll
+E:\数据库pj完整源码_最终交付版\BLL\bin\Debug\Common.dll
+E:\数据库pj完整源码_最终交付版\BLL\bin\Debug\DAL.pdb
+E:\数据库pj完整源码_最终交付版\BLL\bin\Debug\Model.pdb
+E:\数据库pj完整源码_最终交付版\BLL\bin\Debug\Common.pdb
+E:\数据库pj完整源码_最终交付版\BLL\obj\Debug\BLL.csproj.AssemblyReference.cache
+E:\数据库pj完整源码_最终交付版\BLL\obj\Debug\BLL.csproj.CoreCompileInputs.cache
+E:\数据库pj完整源码_最终交付版\BLL\obj\Debug\BLL.csproj.Up2Date
+E:\数据库pj完整源码_最终交付版\BLL\obj\Debug\BLL.dll
+E:\数据库pj完整源码_最终交付版\BLL\obj\Debug\BLL.pdb

@@ -25,6 +25,8 @@ namespace Web
         public string FooterSupportContent = "<p>暂无内容。</p>";
         public string FooterAboutContent = "<p>暂无内容。</p>";
         public string FooterContactContent = "<p>暂无内容。</p>";
+        public string FooterGitHubHref = "https://github.com/LuBei1022/db-project-2026/";
+        public bool FooterGitHubVisible = false;
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -44,6 +46,7 @@ namespace Web
                 tbl_classdt.Dispose();
 
                 BindFooterContentLinks();
+                BindFooterIconLinks();
 
 
                 DataTable link_list_foot_dt = link_listbll.GetDatatable("select id,upload_pic_icon,url from link_list where isshow=1 and type=1 order by orderid asc,uptime asc,id asc");
@@ -59,6 +62,28 @@ namespace Web
             {
                 ImportDataLog.WriteLog(LogType.Error, "foot.aspx_Error:" + ex.Message + "-" + ex.StackTrace);
             }
+        }
+
+        private void BindFooterIconLinks()
+        {
+            DataTable dt = link_listbll.GetDatatable("select top 1 name,url,isshow from link_list where type=1 and name=N'GitHub' order by orderid asc,id asc");
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                if (dt != null)
+                {
+                    dt.Dispose();
+                }
+                return;
+            }
+
+            int isshow = Function.ConvertTo<int>(Convert.ToString(dt.Rows[0]["isshow"]), 0);
+            string url = Function.HtmlDiscode(Convert.ToString(dt.Rows[0]["url"]));
+            FooterGitHubVisible = isshow == 1;
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                FooterGitHubHref = url.Trim();
+            }
+            dt.Dispose();
         }
 
         private void BindFooterContentLinks()

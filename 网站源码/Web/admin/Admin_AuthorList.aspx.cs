@@ -148,7 +148,7 @@ order by t.row_no";
                 html.Append("</td>");
                 html.Append("<td>").Append(literatureCount).Append("</td>");
                 html.Append("<td>").Append(addtime == DateTime.MinValue ? "" : addtime.ToString("yyyy-MM-dd HH:mm")).Append("</td>");
-                html.Append("<td><div class=\"author-actions\"><a href=\"Admin_AuthorInfo.aspx?ID=").Append(id).Append("&MenuId=").Append(Server.UrlEncode(MenuId)).Append("\">详情</a><a href=\"Admin_AuthorEdit.aspx?Action=Edit&ID=").Append(id).Append("&MenuId=").Append(Server.UrlEncode(MenuId)).Append("\">编辑</a></div></td>");
+                html.Append("<td><div class=\"author-actions\"><a href=\"Admin_AuthorInfo.aspx?ID=").Append(id).Append("&MenuId=").Append(Server.UrlEncode(MenuId)).Append("\">详情</a><a href=\"Admin_AuthorEdit.aspx?Action=Edit&ID=").Append(id).Append("&MenuId=").Append(Server.UrlEncode(MenuId)).Append("\">编辑</a><a href=\"Admin_AuthorMerge.aspx?DuplicateID=").Append(id).Append("&MenuId=").Append(Server.UrlEncode(MenuId)).Append("\">合并</a></div></td>");
                 html.Append("</tr>");
             }
             return html.ToString();

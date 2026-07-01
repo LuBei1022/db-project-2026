@@ -87,6 +87,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>    <Content Include="admin\Admin_AuthorEdit.aspx" />
+    <Content Include="admin\Admin_AuthorMerge.aspx" />
     <Content Include="admin\Admin_AuthorInfo.aspx" />
     <Content Include="admin\Admin_AuthorList.aspx" />
     <Content Include="admin\Admin_ConferenceList.aspx" />
@@ -114,7 +115,6 @@
     <Content Include="admin\Admin_FootIconLinkList.aspx" />
     <Content Include="admin\Admin_LinkType.aspx" />
     <Content Include="admin\Admin_Log.aspx" />
-    <Content Include="admin\Admin_Model.aspx" />
     <Content Include="admin\Admin_Null.aspx" />
                                                                 <Content Include="admin\Admin_SearchHotList.aspx" />
     <Content Include="admin\Admin_ServerInfo.aspx" />
@@ -482,6 +482,7 @@
     <Content Include="js\jquery-1.11.3.min.js" />
     <Content Include="js\jquery.infinitescroll.js" />
     <Content Include="js\literature-graph.js" />
+    <Content Include="js\literature-text-normalizer.js" />
     <Content Include="js\layui.js" />
     <Content Include="js\qrcode.min.js" />
     <Content Include="js\swiper-bundle.min.js" />
@@ -574,6 +575,10 @@
     </Compile>
     <Compile Include="admin\Admin_AuthorEdit.aspx.cs">
       <DependentUpon>Admin_AuthorEdit.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="admin\Admin_AuthorMerge.aspx.cs">
+      <DependentUpon>Admin_AuthorMerge.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="admin\Admin_AuthorInfo.aspx.cs">
@@ -699,13 +704,6 @@
     </Compile>
     <Compile Include="admin\Admin_Log.aspx.designer.cs">
       <DependentUpon>Admin_Log.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="admin\Admin_Model.aspx.cs">
-      <DependentUpon>Admin_Model.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="admin\Admin_Model.aspx.designer.cs">
-      <DependentUpon>Admin_Model.aspx</DependentUpon>
     </Compile>
     <Compile Include="admin\Admin_Null.aspx.cs">
       <DependentUpon>Admin_Null.aspx</DependentUpon>
@@ -1134,7 +1132,6 @@
     <Content Include="fonts\iconfont.woff" />
     <Content Include="fonts\iconfont.woff2" />
     <Content Include="Inc\LiteratureGraph.ashx" />
-    <Content Include="Inc\RagApi.ashx" />
     <Content Include="Inc\UserCommon.ashx" />
     <Content Include="admin\iconfont\iconfont.json" />
     <Content Include="admin\iconfont\iconfont.ttf" />

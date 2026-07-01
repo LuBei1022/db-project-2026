@@ -6360,6 +6360,9 @@ body.front-glass .portal-foot-social {
 
 body.ac:not(.lit-home) .portal-foot-social a,
 body.front-glass .portal-foot-social a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: #9ca3af;
     font-weight: 800;
 }

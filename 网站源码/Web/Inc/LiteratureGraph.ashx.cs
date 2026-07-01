@@ -19,8 +19,6 @@ namespace Web.Inc
     /// </summary>
     public class LiteratureGraph : IHttpHandler
     {
-        private const int MaxLiteratureCount = 100;
-
         public void ProcessRequest(HttpContext context)
         {
             context.Response.ContentType = "application/json;charset=UTF-8";
@@ -30,8 +28,10 @@ namespace Web.Inc
             {
                 user_list user = CommonUserFunc.GetUserLoginStatus();
                 int userId = user == null ? 0 : user.id;
+                int categoryId = ParseCategoryId(context.Request["category_id"]);
+                bool includePending = ShouldIncludePending(context.Request);
 
-                GraphResponse response = BuildGraph(userId);
+                GraphResponse response = BuildGraph(userId, categoryId, includePending);
                 WriteJson(context, response);
             }
             catch (Exception ex)
@@ -53,9 +53,9 @@ namespace Web.Inc
             get { return false; }
         }
 
-        private static GraphResponse BuildGraph(int userId)
+        private static GraphResponse BuildGraph(int userId, int graphCategoryId, bool includePending)
         {
-            DataTable literatureRows = QueryLiterature(userId);
+            DataTable literatureRows = QueryLiterature(userId, graphCategoryId, includePending);
             Dictionary<int, GraphNode> literatureNodes = new Dictionary<int, GraphNode>();
             Dictionary<string, GraphNode> allNodes = new Dictionary<string, GraphNode>(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, GraphEdge> allEdges = new Dictionary<string, GraphEdge>(StringComparer.OrdinalIgnoreCase);
@@ -74,6 +74,7 @@ namespace Web.Inc
                     literatureIds.Add(literatureId);
                     string nodeId = "lit_" + literatureId.ToString(CultureInfo.InvariantCulture);
                     string title = Trim(ToText(row["title"]));
+                    string publisherDisplay = GetPublisherDisplay(row);
                     GraphNode literatureNode = new GraphNode
                     {
                         id = nodeId,
@@ -91,7 +92,7 @@ namespace Web.Inc
                             { "分类", Trim(ToText(row["category_name"])) },
                             { "期刊", Trim(ToText(row["journal_name"])) },
                             { "会议", Trim(ToText(row["conference_name"])) },
-                            { "出版方", Trim(ToText(row["publisher"])) },
+                            { "出版方", publisherDisplay },
                             { "上传时间", FormatDate(row["addtime"]) }
                         }
                     };
@@ -158,14 +159,18 @@ namespace Web.Inc
             };
         }
 
-        private static DataTable QueryLiterature(int userId)
+        private static DataTable QueryLiterature(int userId, int categoryId, bool includePending)
         {
+            string statusFilter = includePending
+                ? "(l.status = 1 OR (@UserId > 0 AND l.status = 0 AND l.userid = @UserId))"
+                : "l.status = 1";
+            string categoryFilter = categoryId > 0 ? " AND l.category_id = @CategoryId" : string.Empty;
             string sql = @"
-SELECT TOP (@Limit)
+SELECT
     l.id,
     l.title,
     l.doi,
-    l.institution,
+    " + ActiveInstitutionNamesSql("l") + @" AS institution,
     l.publish_year,
     l.source_type,
     l.journal_name,
@@ -178,10 +183,11 @@ SELECT TOP (@Limit)
     c.name AS category_name
 FROM dbo.Literature l
 LEFT JOIN dbo.LiteratureCategory c ON l.category_id = c.id
-WHERE l.status = 1
-   OR (@UserId > 0 AND l.status = 0 AND l.userid = @UserId)
+WHERE l.canonical_literature_id IS NULL
+  AND " + statusFilter + @"
+" + categoryFilter + @"
 ORDER BY
-    CASE WHEN @UserId > 0 AND l.status = 0 AND l.userid = @UserId THEN 0 ELSE 1 END,
+    CASE WHEN @IncludePending = 1 AND @UserId > 0 AND l.status = 0 AND l.userid = @UserId THEN 0 ELSE 1 END,
     l.addtime DESC,
     l.id DESC";
 
@@ -189,12 +195,85 @@ ORDER BY
             using (SqlCommand cmd = new SqlCommand(sql, conn))
             using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
             {
-                cmd.Parameters.Add("@Limit", SqlDbType.Int).Value = MaxLiteratureCount;
                 cmd.Parameters.Add("@UserId", SqlDbType.Int).Value = userId;
+                cmd.Parameters.Add("@IncludePending", SqlDbType.Bit).Value = includePending;
+                if (categoryId > 0)
+                {
+                    cmd.Parameters.Add("@CategoryId", SqlDbType.Int).Value = categoryId;
+                }
                 DataTable table = new DataTable();
                 adapter.Fill(table);
                 return table;
             }
+        }
+
+        private static string ActiveInstitutionNamesSql(string literatureAlias)
+        {
+            string aimAffiliation = NormalizeInstitutionSql("aim.affiliation_text");
+            string deletedNameCn = NormalizeInstitutionSql("deletedInst.name_cn");
+            string deletedNameEn = NormalizeInstitutionSql("deletedInst.name_en");
+            return @"(
+            select string_agg(src.institution_name,N'；')
+            from
+            (
+                select distinct
+                    coalesce(
+                        nullif(i.name_cn,N''),
+                        nullif(i.name_en,N''),
+                        case
+                            when isnull(aim.institution_id,0)=0 and not exists(
+                                select 1 from Institution deletedInst
+                                where deletedInst.status=-1
+                                  and (
+                                      " + aimAffiliation + @"=" + deletedNameCn + @"
+                                      or " + aimAffiliation + @"=" + deletedNameEn + @"
+                                  )
+                            )
+                            then nullif(aim.affiliation_text,N'')
+                        end
+                    ) as institution_name
+                from LiteratureAuthorInstitutionMap aim
+                left join Institution i on i.id=aim.institution_id and i.status<>-1
+                where aim.literature_id=" + literatureAlias + @".id
+            ) src
+            where LTRIM(RTRIM(isnull(src.institution_name,N'')))<>N''
+        )";
+        }
+
+        private static string NormalizeInstitutionSql(string field)
+        {
+            return "LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(isnull(" + field + ",N''),N'&nbsp;',N' '),NCHAR(160),N' '),NCHAR(12288),N' ')))";
+        }
+
+        private static int ParseCategoryId(string raw)
+        {
+            raw = Trim(raw);
+            if (string.IsNullOrWhiteSpace(raw) || string.Equals(raw, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                return 0;
+            }
+
+            if (raw.StartsWith("cat:", StringComparison.OrdinalIgnoreCase))
+            {
+                raw = raw.Substring(4);
+            }
+
+            int categoryId;
+            return int.TryParse(raw, out categoryId) && categoryId > 0 ? categoryId : 0;
+        }
+
+        private static bool ShouldIncludePending(HttpRequest request)
+        {
+            string scope = Trim(request["scope"]);
+            string includePending = Trim(request["include_pending"]);
+            if (string.Equals(scope, "public", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return !(string.Equals(includePending, "0", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(includePending, "false", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(includePending, "no", StringComparison.OrdinalIgnoreCase));
         }
 
         private static void AddAuthorNodes(List<int> literatureIds, Dictionary<string, GraphNode> allNodes, Dictionary<string, GraphEdge> allEdges)
@@ -215,7 +294,7 @@ ORDER BY
             bool hasInstitution = TableExists("Institution");
             string affiliationSelect = hasAffiliationText ? "m.affiliation_text" : "CAST(NULL AS nvarchar(500))";
             string mapSelect = hasInstitutionMap
-                ? "aim.id AS map_id, aim.institution_id, aim.affiliation_text AS map_affiliation_text, aim.institution_order"
+                ? "aim.id AS map_id, aim.institution_id, CASE WHEN ISNULL(aim.institution_id,0)=0 THEN aim.affiliation_text ELSE CAST(NULL AS nvarchar(1000)) END AS map_affiliation_text, aim.institution_order"
                 : "CAST(NULL AS int) AS map_id, CAST(NULL AS int) AS institution_id, CAST(NULL AS nvarchar(1000)) AS map_affiliation_text, 0 AS institution_order";
             string institutionSelect = hasInstitutionMap && hasInstitution
                 ? "inst.name_cn AS institution_name_cn, inst.name_en AS institution_name_en"
@@ -266,8 +345,13 @@ ORDER BY m.literature_id, m.author_order, m.id, institution_order, map_id";
                 string rawNameCn = Trim(ToText(row["name_cn"]));
                 string rawNameEn = Trim(ToText(row["name_en"]));
                 string affiliationText = Trim(ToText(row["affiliation_text"]));
+                int institutionId = ToInt(row["institution_id"]);
                 string masterAffiliationText = Trim(ToText(row["map_affiliation_text"]));
-                string institutionName = FirstNonEmpty(ToText(row["institution_name_cn"]), ToText(row["institution_name_en"]), masterAffiliationText);
+                string institutionName = FirstNonEmpty(ToText(row["institution_name_cn"]), ToText(row["institution_name_en"]));
+                if (string.IsNullOrWhiteSpace(institutionName) && institutionId <= 0)
+                {
+                    institutionName = masterAffiliationText;
+                }
                 string nameCn = ContainsChinese(rawNameCn) ? rawNameCn : string.Empty;
                 string nameEn = !string.IsNullOrWhiteSpace(rawNameEn) ? rawNameEn : (string.IsNullOrWhiteSpace(nameCn) ? rawNameCn : string.Empty);
                 string authorName = !string.IsNullOrWhiteSpace(nameCn) ? nameCn : nameEn;
@@ -297,9 +381,9 @@ ORDER BY m.literature_id, m.author_order, m.id, institution_order, map_id";
                 AddEdge(allEdges, "lit_" + literatureId.ToString(CultureInfo.InvariantCulture), authorNodeId, "所属作者");
                 if (!string.IsNullOrWhiteSpace(institutionName))
                 {
-                    AddInstitutionNodeAndEdge(allNodes, allEdges, authorNodeId, ToInt(row["institution_id"]), institutionName, masterAffiliationText);
+                    AddInstitutionNodeAndEdge(allNodes, allEdges, authorNodeId, institutionId, institutionName, FirstNonEmpty(masterAffiliationText, institutionName));
                 }
-                else
+                else if (institutionId <= 0)
                 {
                     foreach (string fallbackInstitution in SplitAffiliations(affiliationText))
                     {
@@ -445,7 +529,7 @@ ORDER BY m.literature_id, m.author_order, m.id, institution_order, map_id";
                 return conferenceName;
             }
 
-            return Trim(ToText(row["publisher"]));
+            return GetPublisherDisplay(row);
         }
 
         private static string GetVenueType(DataRow row)
@@ -460,7 +544,27 @@ ORDER BY m.literature_id, m.author_order, m.id, institution_order, map_id";
                 return "会议";
             }
 
-            return "出版方";
+            string publisher = Trim(ToText(row["publisher"]));
+            return IsPreprintRepository(publisher) ? "预印本" : "出版方";
+        }
+
+        private static string GetPublisherDisplay(DataRow row)
+        {
+            string publisher = Trim(ToText(row["publisher"]));
+            return IsPreprintRepository(publisher) ? "预印本" : publisher;
+        }
+
+        private static bool IsPreprintRepository(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            string normalized = value.Trim().TrimEnd('.').Replace(" ", string.Empty);
+            return string.Equals(normalized, "arXiv", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "arxiv.org", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "预印本", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool ContainsChinese(string value)

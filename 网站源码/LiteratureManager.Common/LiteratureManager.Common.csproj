@@ -168,6 +168,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>    <Compile Include="AppPayModel.cs" />
+    <Compile Include="AuthorMergeService.cs" />
     <Compile Include="ClostOrderRespModel.cs" />
     <Compile Include="CodeHelper.cs" />
     <Compile Include="CommonFunc.cs" />
@@ -180,7 +181,8 @@
     <Compile Include="JsonHelper.cs" />
     <Compile Include="LiteratureRagSync.cs" />
     <Compile Include="LiteratureRelationSync.cs" />
-    <Compile Include="LiteratureVenueProfileSync.cs" />
+    <Compile Include="LiteratureStatus.cs" />
+    <Compile Include="LiteratureVenueSync.cs" />
     <Compile Include="MakePic.cs" />
     <Compile Include="PdfParseConcurrencyGate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

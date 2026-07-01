@@ -107,6 +107,7 @@ namespace LiteratureManager.Common
 
             List<AuthorSyncItem> authors = BuildAuthorSyncItems(authorNames, authorDetailsJson);
             bool canSaveAffiliation = HasAuthorMapAffiliationColumns();
+            HashSet<int> syncedAuthorIds = new HashSet<int>();
             for (int i = 0; i < authors.Count; i++)
             {
                 AuthorSyncItem item = authors[i];
@@ -147,6 +148,11 @@ namespace LiteratureManager.Common
                 }
                 else
                 {
+                    if (syncedAuthorIds.Contains(author.id))
+                    {
+                        continue;
+                    }
+                    syncedAuthorIds.Add(author.id);
                     mapBll.Add(new LiteratureAuthorMap
                     {
                         literature_id = literature.id,
@@ -234,11 +240,43 @@ namespace LiteratureManager.Common
         {
             object value = DBHelper.ExecuteScalarObject(
                 CommandType.Text,
-                @"insert into dbo.LiteratureAuthorMap
-                    (literature_id, author_id, author_order, is_corresponding, affiliation_text, raw_author_text, display_author_name, author_name_raw, is_confirmed, confirm_time, identity_confidence, addtime)
-                  values
-                    (@literature_id, @author_id, @author_order, @is_corresponding, @affiliation_text, @raw_author_text, @display_author_name, @author_name_raw, 1, getdate(), @identity_confidence, getdate());
-                  select cast(scope_identity() as int);",
+                @"declare @map_id int;
+                  select @map_id=id
+                  from dbo.LiteratureAuthorMap with (updlock, holdlock)
+                  where literature_id=@literature_id and author_id=@author_id;
+
+                  if @map_id is null
+                  begin
+                      insert into dbo.LiteratureAuthorMap
+                          (literature_id, author_id, author_order, is_corresponding, affiliation_text, raw_author_text, display_author_name, author_name_raw, is_confirmed, confirm_time, identity_confidence, addtime)
+                      values
+                          (@literature_id, @author_id, @author_order, @is_corresponding, @affiliation_text, @raw_author_text, @display_author_name, @author_name_raw, 1, getdate(), @identity_confidence, getdate());
+                      set @map_id=cast(scope_identity() as int);
+                  end
+                  else
+                  begin
+                      update dbo.LiteratureAuthorMap
+                      set author_order=case when isnull(author_order,0)<=0 then @author_order else author_order end,
+                          is_corresponding=@is_corresponding,
+                          affiliation_text=case
+                              when nullif(ltrim(rtrim(isnull(@affiliation_text,N''))),N'') is null then affiliation_text
+                              when nullif(ltrim(rtrim(isnull(affiliation_text,N''))),N'') is null then @affiliation_text
+                              when charindex(ltrim(rtrim(@affiliation_text)), affiliation_text)=0 then affiliation_text + N'；' + @affiliation_text
+                              else affiliation_text
+                          end,
+                          raw_author_text=case when nullif(ltrim(rtrim(isnull(raw_author_text,N''))),N'') is null then @raw_author_text else raw_author_text end,
+                          display_author_name=case when nullif(ltrim(rtrim(isnull(display_author_name,N''))),N'') is null then @display_author_name else display_author_name end,
+                          author_name_raw=case when nullif(ltrim(rtrim(isnull(author_name_raw,N''))),N'') is null then @author_name_raw else author_name_raw end,
+                          is_confirmed=1,
+                          confirm_time=getdate(),
+                          identity_confidence=case
+                              when identity_confidence is null or identity_confidence<@identity_confidence then @identity_confidence
+                              else identity_confidence
+                          end
+                      where id=@map_id;
+                  end
+
+                  select @map_id;",
                 new SqlParameter("@literature_id", SqlDbType.Int) { Value = literatureId },
                 new SqlParameter("@author_id", SqlDbType.Int) { Value = authorId },
                 new SqlParameter("@author_order", SqlDbType.Int) { Value = authorOrder },
@@ -1154,18 +1192,33 @@ namespace LiteratureManager.Common
             List<string> tags = SplitNames(tagNames);
             for (int i = 0; i < tags.Count; i++)
             {
-                string encodedName = EncodeForSql(tags[i]);
-                LiteratureTag tag = tagBll.SelectSingle("name='" + encodedName + "' and status<>-1");
+                string tagName = Function.HtmlDiscode(tags[i]).Trim();
+                if (string.IsNullOrWhiteSpace(tagName))
+                {
+                    continue;
+                }
+
+                LiteratureTag tag = FindLiteratureTagByName(tagBll, tagName, "status=1");
                 if (tag == null || tag.id <= 0)
                 {
+                    LiteratureTag inactiveTag = FindLiteratureTagByName(tagBll, tagName, "status<>1");
+                    if (inactiveTag != null && inactiveTag.id > 0)
+                    {
+                        continue;
+                    }
+
                     tag = new LiteratureTag
                     {
-                        name = Function.HtmlEncode(tags[i]),
+                        name = Function.HtmlEncode(tagName),
                         orderid = 0,
                         status = 1,
                         addtime = DateTime.Now
                     };
                     tag.id = ToInt(tagBll.AddIdentity(tag, "id"));
+                }
+                else
+                {
+                    NormalizeStoredTagName(tagBll, tag, tagName);
                 }
 
                 if (tag.id <= 0)
@@ -1180,6 +1233,77 @@ namespace LiteratureManager.Common
                     addtime = DateTime.Now
                 }, "id");
             }
+        }
+
+        private static LiteratureTag FindLiteratureTagByName(BLLBase<LiteratureTag> tagBll, string tagName, string statusWhere)
+        {
+            if (tagBll == null || string.IsNullOrWhiteSpace(tagName))
+            {
+                return null;
+            }
+
+            string encodedName = EncodeForSql(tagName);
+            LiteratureTag direct = tagBll.SelectSingle("name=N'" + encodedName + "' and " + statusWhere);
+            if (direct != null && direct.id > 0)
+            {
+                return direct;
+            }
+
+            DataTable dt = tagBll.GetDatatable("select id,name,orderid,status,addtime from LiteratureTag where " + statusWhere + " order by orderid asc,id asc");
+            try
+            {
+                string normalizedName = NormalizeTagName(tagName);
+                if (dt == null || dt.Rows.Count <= 0 || string.IsNullOrWhiteSpace(normalizedName))
+                {
+                    return null;
+                }
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    string candidate = NormalizeTagName(Function.HtmlDiscode(Convert.ToString(row["name"])));
+                    if (!string.Equals(candidate, normalizedName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    return new LiteratureTag
+                    {
+                        id = ToInt(row["id"]),
+                        name = Convert.ToString(row["name"]),
+                        orderid = ToInt(row["orderid"]),
+                        status = ToInt(row["status"]),
+                        addtime = row["addtime"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(row["addtime"])
+                    };
+                }
+            }
+            finally
+            {
+                if (dt != null)
+                {
+                    dt.Dispose();
+                }
+            }
+
+            return null;
+        }
+
+        private static void NormalizeStoredTagName(BLLBase<LiteratureTag> tagBll, LiteratureTag tag, string tagName)
+        {
+            if (tagBll == null || tag == null || tag.id <= 0 || string.IsNullOrWhiteSpace(tagName))
+            {
+                return;
+            }
+
+            string normalizedStoredName = Function.HtmlEncode(tagName);
+            if (!string.Equals(tag.name ?? string.Empty, normalizedStoredName, StringComparison.Ordinal))
+            {
+                tagBll.Update("name=N'" + EncodeForSql(tagName) + "'", "id=" + tag.id);
+            }
+        }
+
+        private static string NormalizeTagName(string value)
+        {
+            return Regex.Replace(Function.HtmlDiscode(value ?? string.Empty), @"\s+", " ").Trim();
         }
 
         private static void SyncFiles(int literatureId, string filePath, string fileName)

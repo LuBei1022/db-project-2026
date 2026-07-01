@@ -21,7 +21,6 @@ namespace LiteratureManager.Common
     {
         public static BLLBase<websiteinfo_list> websiteinfo_listbll = new BLLBase<websiteinfo_list>();
         public static BLLBase<logincode_list> logincode_listbll = new BLLBase<logincode_list>();
-        public static BLLBase<model_list> model_listbll = new BLLBase<model_list>();
         public static BLLBase<tbl_class> tbl_classbll = new BLLBase<tbl_class>();
         public static BLLBase<userimg_list> userimg_listbll = new BLLBase<userimg_list>();
         public static BLLBase<userfile_list> userfile_listbll = new BLLBase<userfile_list>();
@@ -511,13 +510,31 @@ namespace LiteratureManager.Common
         }
         public static string GetModelUrl(string id)
         {
-            string m_url = "";
-            model_list model_list = model_listbll.SelectSingle("id", Function.ConvertTo<int>(id, 0));
-            if (model_list != null && model_list.id > 0)
+            int modelId = Function.ConvertTo<int>(id, 0);
+            switch (modelId)
             {
-                m_url = Function.HtmlDiscode(model_list.m_url);
+                case 2:
+                    return "/WebsiteData/News.aspx";
+                case 3:
+                    return "/WebsiteData/Single.aspx";
+                default:
+                    return string.Empty;
             }
-            return m_url;
+        }
+
+        public static string GetModelName(int id)
+        {
+            switch (id)
+            {
+                case 1:
+                    return "栏目分组";
+                case 2:
+                    return "新闻列表";
+                case 3:
+                    return "单页内容";
+                default:
+                    return "未配置";
+            }
         }
 
 

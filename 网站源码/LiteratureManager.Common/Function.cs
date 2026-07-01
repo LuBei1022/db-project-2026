@@ -329,24 +329,38 @@ namespace LiteratureManager.Common
             if (!string.IsNullOrWhiteSpace(theString))
             {
                 theString = theString.Replace("'", "&#039;");
-                theString = theString.Replace("and", "ξξ_and_ξξ");
-                theString = theString.Replace("exec", "ξξ_exec_ξξ");
-                theString = theString.Replace("insert", "ξξ_insert_ξξ");
-                theString = theString.Replace("select", "ξξ_select_ξξ");
-                theString = theString.Replace("delete", "ξξ_delete_ξξ");
-                theString = theString.Replace("update", "ξξ_update_ξξ");
-                theString = theString.Replace("count", "ξξ_count_ξξ");
+                theString = ReplaceSqlKeywordToken(theString, "and");
+                theString = ReplaceSqlKeywordToken(theString, "exec");
+                theString = ReplaceSqlKeywordToken(theString, "insert");
+                theString = ReplaceSqlKeywordToken(theString, "select");
+                theString = ReplaceSqlKeywordToken(theString, "delete");
+                theString = ReplaceSqlKeywordToken(theString, "update");
+                theString = ReplaceSqlKeywordToken(theString, "count");
                 theString = theString.Replace("*", "ξξ_*_ξξ");
                 theString = theString.Replace("%", "ξξ_%_ξξ");
-                theString = theString.Replace("chr", "ξξ_chr_ξξ");
-                theString = theString.Replace("mid", "ξξ_mid_ξξ");
-                theString = theString.Replace("master", "ξξ_master_ξξ");
-                theString = theString.Replace("truncate", "ξξ_truncate_ξξ");
-                theString = theString.Replace("char", "ξξ_char_ξξ");
-                theString = theString.Replace("declare", "ξξ_declare_ξξ");
-                theString = theString.Replace("or", "ξξ_or_ξξ");
+                theString = ReplaceSqlKeywordToken(theString, "chr");
+                theString = ReplaceSqlKeywordToken(theString, "mid");
+                theString = ReplaceSqlKeywordToken(theString, "master");
+                theString = ReplaceSqlKeywordToken(theString, "truncate");
+                theString = ReplaceSqlKeywordToken(theString, "char");
+                theString = ReplaceSqlKeywordToken(theString, "declare");
+                theString = ReplaceSqlKeywordToken(theString, "or");
             }
             return theString;
+        }
+
+        private static string ReplaceSqlKeywordToken(string value, string keyword)
+        {
+            return Regex.Replace(value, "\\b" + Regex.Escape(keyword) + "\\b", "ξξ_" + keyword + "_ξξ", RegexOptions.IgnoreCase);
+        }
+
+        private static string RemoveSqlKeywordTokens(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+            return Regex.Replace(value, "(?:ξξ|§§|§)_([A-Za-z*%]+)_(?:ξξ|§§|§)", "$1");
         }
         public static string GetAdminUpload_Pic(string imgurl)
         {
@@ -483,6 +497,7 @@ namespace LiteratureManager.Common
         {
             if (!string.IsNullOrWhiteSpace(theString))
             {
+                theString = RemoveSqlKeywordTokens(theString);
                 theString = theString.Replace("ξξ_", "");
                 theString = theString.Replace("_ξξ", "");
                 theString = theString.Replace("&emsp;", " ");
@@ -498,6 +513,7 @@ namespace LiteratureManager.Common
         }
         public static string HtmlSqlDiscode(string theString)
         {
+            theString = RemoveSqlKeywordTokens(theString);
             theString = theString.Replace("ξξ_", "");
             theString = theString.Replace("_ξξ", "");
             theString = theString.Replace("&#039;", "'");
@@ -507,6 +523,7 @@ namespace LiteratureManager.Common
         {
             if (!string.IsNullOrWhiteSpace(theString))
             {
+                theString = RemoveSqlKeywordTokens(theString);
                 theString = theString.Replace("ξξ_", "");
                 theString = theString.Replace("_ξξ", "");
                 theString = theString.Replace("&emsp;", " ");
@@ -539,6 +556,7 @@ namespace LiteratureManager.Common
                 }
                 if (theString.IndexOf("ξξ_") >= 0)
                 {
+                    theString = RemoveSqlKeywordTokens(theString);
                     theString = theString.Replace("ξξ_", "");
                 }
                 if (theString.IndexOf("_ξξ") >= 0)

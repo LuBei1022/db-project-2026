@@ -73,7 +73,33 @@ display: block;
     resize: none;
     background: #f3f3f3;
     border-radius: 10px;
-}
+  }
+  .comment-audit-panel{
+      margin: 18px 0 8px;
+      padding: 16px;
+      border: 1px solid #d9e7ff;
+      border-left: 4px solid #0d6efd;
+      border-radius: 8px;
+      background: #f8fbff;
+  }
+  .comment-audit-title{
+      font-weight: 700;
+      font-size: 16px;
+      color: #1f2937;
+      margin-bottom: 8px;
+  }
+  .comment-audit-status{
+      color: #4b5563;
+      margin-bottom: 12px;
+  }
+  .comment-audit-actions{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+  }
+  .comment-audit-actions a{
+      text-decoration: none;
+  }
     </style>
     <form id="form2" runat="server">
         <!--begin::App Content-->
@@ -110,10 +136,11 @@ display: block;
                                                 <div class="record-text">
                                                     <h4><%=user_name %> <span><%=ServiceLog_List.addtime.ToString("yyyy-MM-dd HH:mm:ss") %></span></h4>
                                                     <div><%=Function.Replace_Content(ServiceLog_List.info_) %></div>
-                                                </div>
-                                            </div>
-                                            <%} %>
-                                            <asp:Repeater ID="DataList" runat="server">
+                                                 </div>
+                                             </div>
+                                             <%} %>
+                                             <%=LiteratureCommentAuditHtml %>
+                                             <asp:Repeater ID="DataList" runat="server">
                                                 <ItemTemplate>
                                                     <div class="record-item">
                                                         <div class="record-img">
@@ -139,7 +166,7 @@ display: block;
                                 <!--begin::Footer-->
                                 <div class="card-footer">
                                     <asp:Button ID="Button3" Text=" 回 复 " CssClass="btn btn-primary" runat="server" OnClick="OnClick_AddUp" />
-                                    <input type="button" name="button" id="button" value=" 返 回 " class="btn submit-but" onclick="history.go(-1)">
+                                    <a id="button" class="btn submit-but" href="<%=Server.HtmlEncode(BackUrl) %>"> 返 回 </a>
                                 </div>
                                 <!--end::Footer-->
                                 <!--end::Form-->

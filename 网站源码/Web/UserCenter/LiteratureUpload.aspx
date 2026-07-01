@@ -453,7 +453,12 @@
     <LiteratureManager:foot ID="foot" runat="server" />
     <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.6/dist/vis-network.min.js"></script>
     <script src="/js/literature-graph.js"></script>
+    <script src="/js/literature-text-normalizer.js"></script>
     <script type="text/javascript">
+        function normalizeAbstractText(value) {
+            return window.LiteratureTextNormalizer ? window.LiteratureTextNormalizer.normalizeAbstract(value) : (value || "");
+        }
+
         function switchUploadMode(mode) {
             var singlePanel = document.getElementById("singleUploadPanel");
             var batchPanel = document.getElementById("batchUploadPanel");
@@ -480,9 +485,48 @@
             var result = [];
             for (var i = 0; i < parts.length; i++) {
                 var current = parts[i].replace(/\s+/g, " ").trim();
+                if (/^(未匹配|待匹配|无|none|unmatched)$/i.test(current)) {
+                    continue;
+                }
                 if (current && result.indexOf(current) < 0) {
                     result.push(current);
                 }
+            }
+            return result;
+        }
+
+        function splitAuthorNameValues(value) {
+            var normalized = String(value || "").replace(/\s+(?:and|&)\s+/gi, ", ");
+            var parts = normalized.split(/[,，;；、|\n\r]+/);
+            var result = [];
+            for (var i = 0; i < parts.length; i++) {
+                var current = parts[i]
+                    .replace(/\s+/g, " ")
+                    .replace(/\s*(?:\d+(?:\s*[,，]\s*\d+)*|[*†‡§¶#]+)\s*$/g, "")
+                    .trim();
+                if (!/[A-Za-z\u4e00-\u9fff]/.test(current)) {
+                    continue;
+                }
+                if (current && result.indexOf(current) < 0) {
+                    result.push(current);
+                }
+            }
+            return result;
+        }
+
+        function namesToUnmatchedAuthorDetails(value) {
+            var names = splitAuthorNameValues(value);
+            var result = [];
+            for (var i = 0; i < names.length; i++) {
+                result.push({
+                    name: names[i],
+                    name_cn: containsChineseClient(names[i]) ? names[i] : "",
+                    name_en: containsChineseClient(names[i]) ? "" : names[i],
+                    affiliations: [],
+                    affiliation_text: "",
+                    markers: [],
+                    mapping_status: "unmatched"
+                });
             }
             return result;
         }
@@ -531,6 +575,17 @@
             return result;
         }
 
+        function pickAuthorDetailsFromParse(data) {
+            if (!data) return [];
+            var details = normalizeAuthorDetails(data.author_details);
+            if (details.length) return details;
+
+            var authors = normalizeAuthorDetails(data.authors);
+            if (authors.length) return authors;
+
+            return namesToUnmatchedAuthorDetails(data.author_names);
+        }
+
         function setAuthorDetailsPayload(details) {
             var input = document.getElementById("<%= author_details_payload.ClientID %>");
             if (!input) return;
@@ -561,7 +616,7 @@
                 row.setAttribute("data-markers", JSON.stringify(item.markers || []));
                 row.innerHTML =
                     "<input type=\"text\" class=\"lit-author-match-name\" data-author-match-name=\"1\" value=\"" + escapeHtmlValue(item.name) + "\" />" +
-                    "<textarea class=\"lit-author-match-affiliation\" data-author-match-affiliation=\"1\">" + escapeHtmlValue(item.affiliation_text || "") + "</textarea>" +
+                    "<textarea class=\"lit-author-match-affiliation\" data-author-match-affiliation=\"1\" placeholder=\"未匹配，可手动填写机构\">" + escapeHtmlValue(item.affiliation_text || "") + "</textarea>" +
                     "<span class=\"lit-author-match-status" + (matched ? "" : " unmatched") + "\">" + (matched ? "已匹配" : "未匹配") + "</span>";
                 list.appendChild(row);
             }
@@ -604,7 +659,7 @@
             var normalized = normalizeAuthorDetails(details);
             var lines = [];
             for (var i = 0; i < normalized.length; i++) {
-                lines.push(normalized[i].name + " => " + (normalized[i].affiliation_text || ""));
+                lines.push(normalized[i].name + " => " + (normalized[i].affiliation_text || "未匹配"));
             }
             return lines.join("\n");
         }
@@ -773,9 +828,10 @@
                     setText("<%= pages.ClientID %>", data.pages);
                     setText("<%= publisher.ClientID %>", data.publisher);
                     setText("<%= keywords.ClientID %>", data.keywords);
-                    setText("<%= abstract_text.ClientID %>", data.abstract_text);
-                    setJson("<%= author_details_payload.ClientID %>", data.author_details || data.authors || []);
-                    renderAuthorMatchEditor(data.author_details || data.authors || []);
+                    setText("<%= abstract_text.ClientID %>", normalizeAbstractText(data.abstract_text));
+                    var pickedAuthorDetails = pickAuthorDetailsFromParse(data);
+                    setJson("<%= author_details_payload.ClientID %>", pickedAuthorDetails);
+                    renderAuthorMatchEditor(pickedAuthorDetails);
                     if (data.source_type) {
                         var source = document.getElementById("<%= source_type.ClientID %>");
                         if (source) {
@@ -897,7 +953,7 @@
             }
 
             function applyParsedData(row, data) {
-                var authorDetails = (data && (data.author_details || data.authors)) || [];
+                var authorDetails = pickAuthorDetailsFromParse(data);
                 if (row) {
                     try {
                         row.setAttribute("data-author-details", JSON.stringify(authorDetails));
@@ -919,7 +975,7 @@
                 setCardField(row, "pages", data.pages);
                 setCardField(row, "publisher", data.publisher);
                 setCardField(row, "keywords", data.keywords);
-                setCardField(row, "abstract_text", data.abstract_text);
+                setCardField(row, "abstract_text", normalizeAbstractText(data.abstract_text));
                 setCardField(row, "author_details_text", formatAuthorDetailsText(authorDetails));
                 setCardField(row, "source_type", data.source_type);
             }
@@ -967,36 +1023,60 @@
                 btn.disabled = true;
                 setBatchStatus("正在解析 0 / " + files.length + "...", "#666666");
 
-                var index = 0;
-                var results = [];
-                function next() {
-                    if (index >= files.length) {
-                        payloadInput.value = JSON.stringify(results);
-                        btn.disabled = false;
-                        setBatchStatus("批量解析完成：" + results.filter(function (item) { return item.success === true; }).length + " / " + files.length + " 个成功", "#28a745");
-                        return;
-                    }
+                var nextIndex = 0;
+                var finishedCount = 0;
+                var activeCount = 0;
+                var batchConcurrency = 3;
+                var results = new Array(files.length);
 
-                    var file = files[index];
-                    var name = (file.name || "").toLowerCase();
-                    var row = list.querySelectorAll(".lit-batch-detail-card")[index] || renderItem(file, "等待解析", "");
-                    if (name.lastIndexOf(".pdf") !== name.length - 4) {
-                        setCardState(row, "非 PDF", "err");
-                        results.push({ file_name: file.name || "", success: false });
-                        index++;
-                        next();
-                        return;
-                    }
-
-                    setCardState(row, "解析中", "");
-                    setBatchStatus("正在解析 " + (index + 1) + " / " + files.length + "...", "#666666");
-                    parseOne(file, row, function (data) {
-                        results.push(data);
-                        index++;
-                        next();
-                    });
+                function updateBatchProgress() {
+                    setBatchStatus("正在解析 " + finishedCount + " / " + files.length + "，进行中 " + activeCount + " / " + batchConcurrency + "...", "#666666");
                 }
-                next();
+
+                function finishBatchParse() {
+                    payloadInput.value = JSON.stringify(results.filter(function (item) { return !!item; }));
+                    btn.disabled = false;
+                    setBatchStatus("批量解析完成：" + results.filter(function (item) { return item && item.success === true; }).length + " / " + files.length + " 个成功", "#28a745");
+                }
+
+                function launchNext() {
+                    if (finishedCount >= files.length) {
+                        finishBatchParse();
+                        return;
+                    }
+
+                    while (activeCount < batchConcurrency && nextIndex < files.length) {
+                        (function (currentIndex) {
+                            var file = files[currentIndex];
+                            var name = (file.name || "").toLowerCase();
+                            var row = list.querySelectorAll(".lit-batch-detail-card")[currentIndex] || renderItem(file, "等待解析", "");
+                            nextIndex++;
+
+                            if (name.lastIndexOf(".pdf") !== name.length - 4) {
+                                setCardState(row, "非 PDF", "err");
+                                results[currentIndex] = { file_name: file.name || "", success: false };
+                                finishedCount++;
+                                launchNext();
+                                return;
+                            }
+
+                            activeCount++;
+                            setCardState(row, "解析中", "");
+                            updateBatchProgress();
+                            parseOne(file, row, function (data) {
+                                results[currentIndex] = data;
+                                activeCount--;
+                                finishedCount++;
+                                launchNext();
+                            });
+                        })(nextIndex);
+                    }
+
+                    if (finishedCount < files.length) {
+                        updateBatchProgress();
+                    }
+                }
+                launchNext();
                 return false;
             };
 

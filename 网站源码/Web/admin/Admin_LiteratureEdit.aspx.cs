@@ -72,11 +72,18 @@ namespace Web.admin
         {
             TagList.Items.Clear();
             DataTable dt = tagBll.GetDatatable("select id,name from LiteratureTag where status=1 order by orderid asc,id asc");
+            HashSet<string> loadedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (dt != null && dt.Rows.Count > 0)
             {
                 foreach (DataRow row in dt.Rows)
                 {
-                    TagList.Items.Add(new System.Web.UI.WebControls.ListItem(row["name"].ToString(), row["id"].ToString()));
+                    string tagName = Function.HtmlDiscode(Convert.ToString(row["name"])).Trim();
+                    if (string.IsNullOrWhiteSpace(tagName) || loadedNames.Contains(tagName))
+                    {
+                        continue;
+                    }
+                    loadedNames.Add(tagName);
+                    TagList.Items.Add(new System.Web.UI.WebControls.ListItem(tagName, row["id"].ToString()));
                 }
             }
         }
@@ -94,8 +101,8 @@ namespace Web.admin
         private void LoadMasterDataOptions()
         {
             List<MasterOption> institutions = LoadInstitutionOptions();
-            List<MasterOption> journals = LoadNamedOptions("Journal", "name_cn", "name_en", "status=1");
-            List<MasterOption> conferences = LoadNamedOptions("Conference", "name_cn", "name_en", "status=1", "acronym");
+            List<MasterOption> journals = LoadJournalOptions();
+            List<MasterOption> conferences = LoadConferenceOptions();
 
             InstitutionDatalistHtml = BuildDatalistHtml(institutions);
             JournalDatalistHtml = BuildDatalistHtml(journals);
@@ -160,7 +167,64 @@ namespace Web.admin
             return result;
         }
 
+        private List<MasterOption> LoadJournalOptions()
+        {
+            List<MasterOption> result = new List<MasterOption>();
+            try
+            {
+                DataTable dt = literatureBll.GetDatatable("select top 500 id,name_cn,name_en from Journal where status=1 order by updatetime desc,id desc");
+                if (dt != null)
+                {
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        int id = Function.ConvertTo<int>(Convert.ToString(row["id"]), 0);
+                        string nameCn = Function.HtmlDiscode(Convert.ToString(row["name_cn"]));
+                        string nameEn = Function.HtmlDiscode(Convert.ToString(row["name_en"]));
+                        string displayName = !string.IsNullOrWhiteSpace(NormalizePlainText(nameCn)) ? nameCn : nameEn;
+                        AddMasterOption(result, id, displayName, nameCn, nameEn);
+                    }
+                    dt.Dispose();
+                }
+            }
+            catch
+            {
+            }
+            return result;
+        }
+
+        private List<MasterOption> LoadConferenceOptions()
+        {
+            List<MasterOption> result = new List<MasterOption>();
+            try
+            {
+                DataTable dt = literatureBll.GetDatatable("select top 500 id,name_cn,name_en,acronym from Conference where status=1 order by updatetime desc,id desc");
+                if (dt != null)
+                {
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        int id = Function.ConvertTo<int>(Convert.ToString(row["id"]), 0);
+                        string nameCn = Function.HtmlDiscode(Convert.ToString(row["name_cn"]));
+                        string nameEn = Function.HtmlDiscode(Convert.ToString(row["name_en"]));
+                        string acronym = Function.HtmlDiscode(Convert.ToString(row["acronym"]));
+                        string displayName = !string.IsNullOrWhiteSpace(NormalizePlainText(acronym)) ? acronym
+                            : (!string.IsNullOrWhiteSpace(NormalizePlainText(nameCn)) ? nameCn : nameEn);
+                        AddMasterOption(result, id, displayName, acronym, nameCn, nameEn);
+                    }
+                    dt.Dispose();
+                }
+            }
+            catch
+            {
+            }
+            return result;
+        }
+
         private void AddMasterOption(List<MasterOption> options, int id, string name)
+        {
+            AddMasterOption(options, id, name, new string[0]);
+        }
+
+        private void AddMasterOption(List<MasterOption> options, int id, string name, params string[] aliases)
         {
             string clean = NormalizePlainText(name);
             if (id <= 0 || string.IsNullOrWhiteSpace(clean))
@@ -170,12 +234,48 @@ namespace Web.admin
             string key = NormalizeMasterName(clean);
             for (int i = 0; i < options.Count; i++)
             {
-                if (NormalizeMasterName(options[i].name) == key)
+                if (options[i].id == id || NormalizeMasterName(options[i].name) == key)
                 {
+                    AddMasterAliases(options[i], aliases);
                     return;
                 }
             }
-            options.Add(new MasterOption { id = id, name = clean });
+            MasterOption option = new MasterOption { id = id, name = clean, aliases = new List<string>() };
+            AddMasterAliases(option, aliases);
+            options.Add(option);
+        }
+
+        private void AddMasterAliases(MasterOption option, params string[] aliases)
+        {
+            if (option == null)
+            {
+                return;
+            }
+            if (option.aliases == null)
+            {
+                option.aliases = new List<string>();
+            }
+            foreach (string alias in aliases ?? new string[0])
+            {
+                string clean = NormalizePlainText(alias);
+                if (string.IsNullOrWhiteSpace(clean) || NormalizeMasterName(clean) == NormalizeMasterName(option.name))
+                {
+                    continue;
+                }
+                bool exists = false;
+                for (int i = 0; i < option.aliases.Count; i++)
+                {
+                    if (NormalizeMasterName(option.aliases[i]) == NormalizeMasterName(clean))
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists)
+                {
+                    option.aliases.Add(clean);
+                }
+            }
         }
 
         private string BuildDatalistHtml(List<MasterOption> options)
@@ -229,9 +329,9 @@ namespace Web.admin
             publisher.Text = Function.HtmlDiscode(literature.publisher);
             language.Text = Function.HtmlDiscode(literature.language);
             keywords.Text = Function.HtmlDiscode(literature.keywords);
-            string mappedTagNames = LiteratureRelationSync.GetTagNames(literature.id);
+            string mappedTagNames = Function.HtmlDiscode(LiteratureRelationSync.GetTagNames(literature.id));
             tag_names.Text = mappedTagNames;
-            BindSelectedTags(Function.HtmlEncode(mappedTagNames));
+            BindSelectedTags(mappedTagNames);
             abstract_text.Text = Function.HtmlDiscode(literature.abstract_text);
             external_url.Text = Function.HtmlDiscode(literature.external_url);
             source_db.Text = Function.HtmlDiscode(literature.source_db);
@@ -286,7 +386,7 @@ namespace Web.admin
             {
                 where += " and id not in(" + id + ")";
             }
-            bool isSpecialReviewRecord = Action == "Edit" && (GetDuplicateMasterId(literature.remark) > 0 || GetMetadataRevisionMasterId(literature.remark) > 0 || literature.status == 3 || literature.status == 4);
+            bool isSpecialReviewRecord = Action == "Edit" && (GetDuplicateMasterId(literature.remark) > 0 || GetMetadataRevisionMasterId(literature.remark) > 0 || literature.status == LiteratureStatus.DuplicateMerged || literature.status == LiteratureStatus.MetadataApplied);
             if (!isSpecialReviewRecord && literatureBll.Exists(where))
             {
                 Function.Ok_Return(Cookie.GetCookie("LMS_AdminName"), "\u6587\u732E\u6807\u9898\u300A" + Function.HtmlDiscode(safeTitle) + "\u300B\u5DF2\u5B58\u5728!", backUrl, 2);
@@ -312,10 +412,12 @@ namespace Web.admin
                 Function.Ok_Return(Cookie.GetCookie("LMS_AdminName"), publishDateError, backUrl, 2);
                 return;
             }
-            literature.journal_name = Function.HtmlEncode(journal_name.Text.Trim());
-            literature.journal_id = ResolveJournalId(journal_name.Text.Trim(), journal_id_payload.Value);
-            literature.conference_name = Function.HtmlEncode(conference_name.Text.Trim());
-            literature.conference_id = ResolveConferenceId(conference_name.Text.Trim(), conference_id_payload.Value);
+            int? resolvedJournalId = ResolveJournalId(journal_name.Text.Trim(), journal_id_payload.Value);
+            int? resolvedConferenceId = ResolveConferenceId(conference_name.Text.Trim(), conference_id_payload.Value);
+            literature.journal_name = Function.HtmlEncode(GetJournalDisplayName(resolvedJournalId, journal_name.Text.Trim()));
+            literature.journal_id = resolvedJournalId;
+            literature.conference_name = Function.HtmlEncode(GetConferenceDisplayName(resolvedConferenceId, conference_name.Text.Trim()));
+            literature.conference_id = resolvedConferenceId;
             literature.publisher = Function.HtmlEncode(publisher.Text.Trim());
             literature.volume = Function.HtmlEncode(volume.Text.Trim());
             literature.issue = Function.HtmlEncode(issue.Text.Trim());
@@ -330,15 +432,15 @@ namespace Web.admin
             literature.remark = BuildRemark(literature.status, remark.Text);
             int duplicateMasterId = Action == "Edit" ? GetDuplicateMasterId(literature.remark) : 0;
             int metadataMasterId = Action == "Edit" ? GetMetadataRevisionMasterId(literature.remark) : 0;
-            bool applyMetadataRevision = metadataMasterId > 0 && literature.status == 1;
-            if (duplicateMasterId > 0 && literature.status == 1)
+            bool applyMetadataRevision = metadataMasterId > 0 && literature.status == LiteratureStatus.Published;
+            if (duplicateMasterId > 0 && literature.status == LiteratureStatus.Published)
             {
-                literature.status = 3;
+                literature.status = LiteratureStatus.DuplicateMerged;
                 literature.remark = Function.HtmlEncode("\u91CD\u590D\u6295\u7A3F\u5BA1\u6838\u901A\u8FC7\uFF0C\u5171\u7528\u6587\u732EID:" + duplicateMasterId + "\u7684\u8BE6\u60C5\u9875");
             }
             if (applyMetadataRevision)
             {
-                literature.status = 0;
+                literature.status = LiteratureStatus.PendingReview;
             }
             UpdateReviewAudit(literature, oldStatus);
             if (Action != "Edit")
@@ -382,9 +484,9 @@ namespace Web.admin
             if (success)
             {
                 LiteratureRelationSync.Sync(literature, submittedAuthorNames, submittedTagNames, submittedPdfFile, submittedPdfName, author_details_payload.Value);
-                if (literature.status == 1)
+                if (literature.status == LiteratureStatus.Published)
                 {
-                    LiteratureVenueProfileSync.EnsureForLiterature(literature);
+                    LiteratureVenueSync.EnsureForLiterature(literature);
                     LiteratureRagSync.QueueReindex(literature.id);
                 }
                 if (applyMetadataRevision && !ApplyMetadataRevisionFromEdit(literature, metadataMasterId))
@@ -392,7 +494,7 @@ namespace Web.admin
                     Function.Ok_Return(Cookie.GetCookie("LMS_AdminName"), "\u5143\u6570\u636E\u4FEE\u6539\u4FDD\u5B58\u6210\u529F\uFF0C\u4F46\u5E94\u7528\u5230\u539F\u6587\u732E\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5!", backUrl, 2);
                     return;
                 }
-                if (Action == "Edit" && oldStatus == 1 && literature.status == 1)
+                if (Action == "Edit" && oldStatus == LiteratureStatus.Published && literature.status == LiteratureStatus.Published)
                 {
                     AddAdminEditNotice(literature);
                 }
@@ -614,6 +716,12 @@ order by m.author_order asc,m.id asc");
                 return exists.id;
             }
 
+            exists = FindJournalByName(cleanName);
+            if (exists != null && exists.id > 0)
+            {
+                return exists.id;
+            }
+
             bool chinese = ContainsChinese(cleanName);
             Journal model = new Journal
             {
@@ -656,6 +764,12 @@ order by m.author_order asc,m.id asc");
                 return exists.id;
             }
 
+            exists = FindConferenceByName(cleanName);
+            if (exists != null && exists.id > 0)
+            {
+                return exists.id;
+            }
+
             bool chinese = ContainsChinese(cleanName);
             Conference model = new Conference
             {
@@ -675,6 +789,119 @@ order by m.author_order asc,m.id asc");
             };
             int id = Function.ConvertTo<int>(conferenceBll.AddIdentity(model, "id"), 0);
             return id > 0 ? (int?)id : null;
+        }
+
+        private Journal FindJournalByName(string value)
+        {
+            string normalized = NormalizeMasterName(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            DataTable dt = journalBll.GetDatatable("select top 1000 id,name_cn,name_en,normalized_name from Journal where status<>-1 order by updatetime desc,id desc");
+            if (dt == null)
+            {
+                return null;
+            }
+            foreach (DataRow row in dt.Rows)
+            {
+                if (IsMasterAliasMatch(normalized, Convert.ToString(row["name_cn"]), Convert.ToString(row["name_en"]), Convert.ToString(row["normalized_name"])))
+                {
+                    int id = Function.ConvertTo<int>(Convert.ToString(row["id"]), 0);
+                    dt.Dispose();
+                    return id > 0 ? journalBll.SelectSingle("id=" + id) : null;
+                }
+            }
+            dt.Dispose();
+            return null;
+        }
+
+        private Conference FindConferenceByName(string value)
+        {
+            string normalized = NormalizeMasterName(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            DataTable dt = conferenceBll.GetDatatable("select top 1000 id,name_cn,name_en,acronym,normalized_name from Conference where status<>-1 order by updatetime desc,id desc");
+            if (dt == null)
+            {
+                return null;
+            }
+            foreach (DataRow row in dt.Rows)
+            {
+                if (IsMasterAliasMatch(normalized, Convert.ToString(row["name_cn"]), Convert.ToString(row["name_en"]), Convert.ToString(row["acronym"]), Convert.ToString(row["normalized_name"])))
+                {
+                    int id = Function.ConvertTo<int>(Convert.ToString(row["id"]), 0);
+                    dt.Dispose();
+                    return id > 0 ? conferenceBll.SelectSingle("id=" + id) : null;
+                }
+            }
+            dt.Dispose();
+            return null;
+        }
+
+        private bool IsMasterAliasMatch(string normalizedInput, params string[] candidates)
+        {
+            foreach (string candidate in candidates ?? new string[0])
+            {
+                if (NormalizeMasterName(candidate) == normalizedInput)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private string GetJournalDisplayName(int? journalId, string fallback)
+        {
+            if (journalId.HasValue && journalId.Value > 0)
+            {
+                Journal journal = journalBll.SelectSingle("id=" + journalId.Value + " and status<>-1");
+                if (journal != null && journal.id > 0)
+                {
+                    string nameCn = NormalizePlainText(journal.name_cn);
+                    string nameEn = NormalizePlainText(journal.name_en);
+                    if (!string.IsNullOrWhiteSpace(nameCn))
+                    {
+                        return nameCn;
+                    }
+                    if (!string.IsNullOrWhiteSpace(nameEn))
+                    {
+                        return nameEn;
+                    }
+                }
+            }
+            return NormalizePlainText(fallback);
+        }
+
+        private string GetConferenceDisplayName(int? conferenceId, string fallback)
+        {
+            if (conferenceId.HasValue && conferenceId.Value > 0)
+            {
+                Conference conference = conferenceBll.SelectSingle("id=" + conferenceId.Value + " and status<>-1");
+                if (conference != null && conference.id > 0)
+                {
+                    string acronym = NormalizePlainText(conference.acronym);
+                    string nameCn = NormalizePlainText(conference.name_cn);
+                    string nameEn = NormalizePlainText(conference.name_en);
+                    if (!string.IsNullOrWhiteSpace(acronym))
+                    {
+                        return acronym;
+                    }
+                    if (!string.IsNullOrWhiteSpace(nameCn))
+                    {
+                        return nameCn;
+                    }
+                    if (!string.IsNullOrWhiteSpace(nameEn))
+                    {
+                        return nameEn;
+                    }
+                }
+            }
+            return NormalizePlainText(fallback);
         }
 
         private IEnumerable<string> SplitMasterNames(string value)
@@ -733,11 +960,11 @@ order by m.author_order asc,m.id asc");
         private string BuildRemark(int currentStatus, string inputRemark)
         {
             string cleanRemark = (inputRemark ?? string.Empty).Trim();
-            if (currentStatus == 1 && IsSystemReviewRemark(cleanRemark))
+            if (currentStatus == LiteratureStatus.Published && IsSystemReviewRemark(cleanRemark))
             {
                 cleanRemark = "\u5BA1\u6838\u901A\u8FC7";
             }
-            else if (currentStatus == 2 && IsSystemReviewRemark(cleanRemark))
+            else if (currentStatus == LiteratureStatus.Rejected && IsSystemReviewRemark(cleanRemark))
             {
                 cleanRemark = "\u8BF7\u4FEE\u6539\u540E\u91CD\u65B0\u63D0\u4EA4\u5BA1\u6838";
             }
@@ -747,7 +974,7 @@ order by m.author_order asc,m.id asc");
 
         private void UpdateReviewAudit(Literature literature, int oldStatus)
         {
-            if (literature.status == 1 || literature.status == 2 || literature.status == 3)
+            if (literature.status == LiteratureStatus.Published || literature.status == LiteratureStatus.Rejected || literature.status == LiteratureStatus.DuplicateMerged || literature.status == LiteratureStatus.MetadataApplied)
             {
                 if (oldStatus != literature.status || !literature.reviewed_by.HasValue || !literature.review_time.HasValue)
                 {
@@ -855,14 +1082,14 @@ order by m.author_order asc,m.id asc");
             {
                 return false;
             }
-            LiteratureVenueProfileSync.EnsureForLiterature(master);
+            LiteratureVenueSync.EnsureForLiterature(master);
 
             string revisionAuthors = LiteratureRelationSync.GetAuthorNames(revision.id);
             string masterTags = LiteratureRelationSync.GetTagNames(master.id);
             LiteratureRelationSync.SyncMetadata(master, revisionAuthors, masterTags, BuildAuthorDetailsJson(revision.id));
 
             int adminId = Function.ConvertTo<int>(Cookie.GetCookie("LMS_AdminID"), 0);
-            string updateRevisionSql = "status=4,reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE(),remark=N'\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u5BA1\u6838\u901A\u8FC7\u5E76\u5E94\u7528\u5230\u6587\u732EID:" + masterId + "\u3002'";
+            string updateRevisionSql = "status=" + LiteratureStatus.MetadataApplied + ",reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE(),remark=N'\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u5BA1\u6838\u901A\u8FC7\u5E76\u5E94\u7528\u5230\u6587\u732EID:" + masterId + "\u3002'";
             bool revisionUpdated = literatureBll.Update(updateRevisionSql, "id=" + revision.id);
             if (revisionUpdated)
             {
@@ -997,6 +1224,7 @@ order by m.author_order asc,m.id asc");
         {
             public int id { get; set; }
             public string name { get; set; }
+            public List<string> aliases { get; set; }
         }
     }
 }

@@ -71,7 +71,6 @@
     <Compile Include="LiteratureImportError.cs" />
     <Compile Include="LiteratureLike.cs" />
     <Compile Include="LiteratureComment.cs" />
-    <Compile Include="LiteratureVenueProfile.cs" />
     <Compile Include="LiteratureTag.cs" />
     <Compile Include="LiteratureTagMap.cs" />
     <Compile Include="integrateExchangeLog_list.cs" />
@@ -82,7 +81,6 @@
     <Compile Include="link_list.cs" />
     <Compile Include="logincode_list.cs" />
     <Compile Include="LoginSingle_List.cs" />
-    <Compile Include="model_list.cs" />
     <Compile Include="NoticeLogStatus_List.cs" />
     <Compile Include="NoticeLogType_List.cs" />
     <Compile Include="NoticeLog_List.cs" />

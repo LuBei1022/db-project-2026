@@ -58,8 +58,11 @@
 - [ ] 还原 `database\manage_db_full.bak` 后核心表存在。
 - [ ] `LiteratureComment` 评论表存在且评论流程可用。
 - [ ] `Author`、`Institution`、`AuthorInstitutionHistory`、`LiteratureAuthorMap`、`LiteratureAuthorInstitutionMap` 作者机构关系表和字段存在。
-- [ ] `Journal`、`Conference`、`LiteratureVenueProfile` 期刊会议资料表存在。
+- [ ] `Journal`、`Conference` 期刊会议资料表存在并可被文献引用。
 - [ ] 文献发表年月字段可保存并用于排序。
+- [ ] `SP_PageList`、`PROCE_SQL2005PAGECHANGE`、`PROC_CLEAN_SOFT_DELETED_DATA` 存储过程存在。
+- [ ] `TR_Literature_Status_Log`、`TR_Journal_Name_Log`、`TR_Conference_Name_Log`、`TR_Institution_Name_Log` 触发器存在。
+- [ ] `AuthorMergeLog`、`LiteratureStatusLog`、`MasterNameChangeLog` 日志表存在。
 
 ## 静态资源
 
@@ -74,3 +77,5 @@
 
 - [ ] `MSBuild.exe web.sln /p:Configuration=Debug /p:Platform="Any CPU" /m /v:m` 编译通过。
 - [ ] `Web.csproj` Content/Compile 项无实际缺失文件。
+- [ ] 最终 SQL、数据库结构和项目引用一致，解决方案编译通过。
+

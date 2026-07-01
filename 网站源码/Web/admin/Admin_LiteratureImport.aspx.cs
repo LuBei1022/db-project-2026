@@ -230,7 +230,7 @@ namespace Web.admin
                         savedRelativePath,
                         originalFileName,
                         GetAuthorDetailsJson(parsed));
-                    LiteratureVenueProfileSync.EnsureForLiterature(literature);
+                    LiteratureVenueSync.EnsureForLiterature(literature);
                     if (literature.status == 1)
                     {
                         LiteratureRagSync.QueueReindex(literature.id);

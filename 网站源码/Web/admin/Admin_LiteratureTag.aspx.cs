@@ -2,7 +2,9 @@
 using BLL;
 using Model;
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Text.RegularExpressions;
 
 namespace Web.admin
 {
@@ -71,7 +73,13 @@ namespace Web.admin
             LiteratureTag model = tagBll.SelectSingle("id=" + id);
             if (model != null && model.id > 0)
             {
-                if (tagBll.Update("status=-1", "id=" + model.id))
+                List<int> ids = GetTagIdsByDisplayName(Function.HtmlDiscode(model.name), "status<>-1");
+                if (!ids.Contains(model.id))
+                {
+                    ids.Add(model.id);
+                }
+
+                if (tagBll.Update("status=-1", "id in(" + string.Join(",", ids.ToArray()) + ")"))
                 {
                     Function.Ok_Return(Cookie.GetCookie("LMS_AdminName"), "\u6807\u7B7E\u300A" + Function.HtmlDiscode(model.name) + "\u300B\u5220\u9664\u6210\u529F!", backUrl, 0);
                 }
@@ -137,13 +145,9 @@ namespace Web.admin
                 }
             }
 
-            string nameText = Function.HtmlEncode(Function.FormRequest("name"));
-            string existsWhere = "name='" + nameText + "' and status<>-1";
-            if (Action == "Edit")
-            {
-                existsWhere += " and id not in(" + id + ")";
-            }
-            if (tagBll.Exists(existsWhere))
+            string cleanName = Function.HtmlDiscode(Function.FormRequest("name")).Trim();
+            string nameText = Function.HtmlEncode(cleanName);
+            if (ActiveTagNameExists(cleanName, Action == "Edit" ? id : 0))
             {
                 Function.Ok_Return(Cookie.GetCookie("LMS_AdminName"), "\u6807\u7B7E\u300A" + Function.HtmlDiscode(nameText) + "\u300B\u5DF2\u5B58\u5728!", backUrl, 2);
                 return;
@@ -197,6 +201,51 @@ namespace Web.admin
             {
                 ddl.SelectedValue = fallback;
             }
+        }
+
+        private bool ActiveTagNameExists(string tagName, int excludeId)
+        {
+            List<int> ids = GetTagIdsByDisplayName(tagName, "status<>-1");
+            foreach (int id in ids)
+            {
+                if (id != excludeId)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private List<int> GetTagIdsByDisplayName(string tagName, string condition)
+        {
+            List<int> ids = new List<int>();
+            string normalizedName = NormalizeTagDisplayName(tagName);
+            if (string.IsNullOrWhiteSpace(normalizedName))
+            {
+                return ids;
+            }
+
+            DataTable dt = tagBll.GetDatatable("select id,name from LiteratureTag where " + condition);
+            if (dt == null)
+            {
+                return ids;
+            }
+
+            foreach (DataRow row in dt.Rows)
+            {
+                string current = NormalizeTagDisplayName(Function.HtmlDiscode(Convert.ToString(row["name"])));
+                if (string.Equals(current, normalizedName, StringComparison.OrdinalIgnoreCase))
+                {
+                    ids.Add(Function.ConvertTo<int>(Convert.ToString(row["id"]), 0));
+                }
+            }
+            dt.Dispose();
+            return ids;
+        }
+
+        private string NormalizeTagDisplayName(string value)
+        {
+            return Regex.Replace(Function.HtmlDiscode(value ?? string.Empty), @"\s+", " ").Trim();
         }
     }
 }

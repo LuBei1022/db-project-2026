@@ -119,7 +119,7 @@
         {
             return string.Empty;
         }
-        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        System.Text.StringBuilder items = new System.Text.StringBuilder();
         foreach (System.Data.DataRow row in dt.Rows)
         {
             string name = LiteratureManager.Common.Function.HtmlDiscode(Convert.ToString(row[nameField]));
@@ -127,15 +127,17 @@
             {
                 continue;
             }
-            if (sb.Length > 0)
+            if (items.Length > 0)
             {
-                sb.Append(" / ");
+                items.Append(" <span class=\"lit-count-separator\">/</span> ");
             }
-            sb.Append(name);
-            sb.Append(" ");
-            sb.Append(LiteratureManager.Common.Function.ConvertTo<int>(Convert.ToString(row["num"]), 0));
+            items.Append("<span class=\"lit-count-item\"><span class=\"lit-count-name\">");
+            items.Append(Server.HtmlEncode(name));
+            items.Append("</span><em class=\"lit-count-badge\">");
+            items.Append(LiteratureManager.Common.Function.ConvertTo<int>(Convert.ToString(row["num"]), 0));
+            items.Append("</em></span>");
         }
-        return sb.ToString();
+        return items.Length > 0 ? "<span class=\"lit-count-list\">" + items.ToString() + "</span>" : string.Empty;
     }
 
     private void AppendOverviewInfoItem(System.Text.StringBuilder html, string label, string value)
@@ -149,7 +151,18 @@
 
     private string SafeOverviewHtml(string value)
     {
-        return string.IsNullOrWhiteSpace(value) ? "暂无" : Server.HtmlEncode(value);
+        return string.IsNullOrWhiteSpace(value) ? "暂无" : value;
+    }
+
+    protected bool ShouldRenderSearchGraphInline()
+    {
+        bool hasTextOrYearSearch = !string.IsNullOrWhiteSpace(keyword) || selectedYear > 0;
+        if (hasTextOrYearSearch)
+        {
+            return false;
+        }
+
+        return !HasCategoryFilter || selectedCategoryId > 0;
     }
 </script>
 <!DOCTYPE html>
@@ -159,6 +172,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>&#25991;&#29486;&#26816;&#32034;</title>
     <LiteratureManager:css ID="css" runat="server" />
+    <% if (IsBrowseView || ShouldRenderSearchGraphInline()) { %>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.6/dist/vis-network.min.css" />
+    <link rel="stylesheet" href="/css/literature-graph.css" />
+    <% } %>
     <style>
         .lit-wrap { max-width: 1400px; margin: 0 auto; padding: 30px 20px 60px; }
         .lit-hero { background: linear-gradient(135deg, #eef6ff 0%, #f9fbff 100%); border: 1px solid #dbe7f4; border-radius: 24px; padding: 32px; margin-bottom: 26px; }
@@ -198,6 +215,14 @@
         .venue-info-grid div { padding: 12px; border: 1px solid #e7edf4; border-radius: 12px; background: #fff; min-width: 0; }
         .venue-info-grid span { display: block; margin-bottom: 6px; color: #7a8795; font-size: 12px; }
         .venue-info-grid strong { display: block; color: #1f344d; font-size: 14px; line-height: 1.55; word-break: break-word; }
+        .venue-info-grid strong .lit-count-list,
+        .lit-browse-info-grid strong .lit-count-list { display: inline !important; margin: 0 !important; color: inherit !important; font-size: inherit !important; line-height: inherit !important; }
+        .venue-info-grid strong .lit-count-item,
+        .lit-browse-info-grid strong .lit-count-item { display: inline !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; color: inherit !important; font-size: inherit !important; line-height: inherit !important; white-space: normal !important; }
+        .venue-info-grid strong .lit-count-name,
+        .lit-browse-info-grid strong .lit-count-name { display: inline !important; margin: 0 !important; color: inherit !important; font-size: inherit !important; }
+        .lit-count-separator { display: inline !important; margin: 0 2px !important; color: #9ca3af !important; font-weight: 600 !important; }
+        .lit-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: #2563eb; color: #fff; font-size: 10px; font-style: normal; font-weight: 800; line-height: 1; vertical-align: 1px; }
         .venue-items { padding: 4px 24px 24px; }
         .venue-item { padding: 20px 0; border-bottom: 1px solid #edf1f5; }
         .venue-item:last-child { border-bottom: 0; }
@@ -255,6 +280,12 @@
         .lit-browse-info-grid div { padding: 12px; border: 1px solid #e7edf4; border-radius: 12px; background: #fff; min-width: 0; }
         .lit-browse-info-grid span { display: block; margin-bottom: 6px; color: #7a8795; font-size: 12px; }
         .lit-browse-info-grid strong { display: block; color: #1f344d; font-size: 14px; line-height: 1.55; word-break: break-word; }
+        .lit-search-graph { margin: 18px 24px 20px; padding: 20px; border: 1px solid #e5edf6; border-radius: 18px; background: #fbfdff; }
+        .lit-search-graph .literature-graph-head { margin-bottom: 14px; padding-bottom: 14px; }
+        .lit-search-graph .literature-graph-body { grid-template-columns: minmax(0, 1fr) 300px; }
+        .lit-search-graph .literature-graph-main,
+        .lit-search-graph .literature-graph-canvas { min-height: 420px; height: 420px; }
+        .lit-search-graph .literature-graph-panel { min-height: 420px; }
         .lit-browse-items { padding: 4px 24px 24px; }
         .lit-browse-mode .lit-item { padding: 20px 0; border-top: 0; border-bottom: 1px solid #edf1f5; }
         .lit-browse-mode .lit-item:last-child { border-bottom: 0; }
@@ -270,6 +301,8 @@
             .venue-grid { grid-template-columns: 1fr; }
             .venue-list { max-height: none; }
             .venue-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .lit-search-graph .literature-graph-body { grid-template-columns: 1fr; }
+            .lit-search-graph .literature-graph-panel { min-height: auto; }
             .lit-hero { padding: 24px; }
             .lit-hero h1 { font-size: 28px; }
             .lit-batchbar { align-items: stretch; flex-direction: column; }
@@ -324,12 +357,33 @@
                         <%=BrowseCategoryListHtml %>
                     </div>
                 </div>
-                <div class="venue-panel venue-main">
+            <div class="venue-panel venue-main">
                     <div class="venue-summary">
                         <h2><%=BrowseCategoryTitleHtml %></h2>
                         <p><%=BrowseCategorySummaryHtml %></p>
                     </div>
                     <%=BrowseCategoryInfoHtml %>
+                    <section class="lit-search-graph literature-graph-widget" data-api="<%=GetSearchGraphApiUrl() %>">
+                        <div class="literature-graph-head">
+                            <div class="literature-graph-title">
+                                <h4>Literature Graph</h4>
+                                <p><%=GetSearchGraphDescription() %></p>
+                            </div>
+                            <div class="literature-graph-status">正在读取文献关系...</div>
+                        </div>
+                        <div class="literature-graph-body">
+                            <div class="literature-graph-main">
+                                <div class="literature-graph-tools" aria-label="图谱工具">
+                                    <button type="button" data-graph-action="fit" title="适配视图">◎</button>
+                                    <button type="button" data-graph-action="zoom-in" title="放大">+</button>
+                                    <button type="button" data-graph-action="zoom-out" title="缩小">-</button>
+                                </div>
+                                <div class="literature-graph-canvas"></div>
+                                <div class="literature-graph-empty">暂无可展示的文献关系数据。</div>
+                            </div>
+                            <div class="literature-graph-panel"></div>
+                        </div>
+                    </section>
                     <div class="venue-items">
                         <%=BrowseLiteratureListHtml %>
                     </div>
@@ -366,9 +420,32 @@
                         </asp:Panel>
                     </asp:Panel>
                     <asp:Panel ID="SearchPanel" runat="server" Visible="true">
+                        <div class="lit-topbar">&#20849;&#25214;&#21040; <strong><%=totalCount %></strong> &#31687;&#25991;&#29486;</div>
+                        <%=RenderSelectedCategoryOverviewInline() %>
+                        <% if (ShouldRenderSearchGraphInline()) { %>
+                        <section class="lit-search-graph literature-graph-widget" data-api="<%=GetSearchGraphApiUrl() %>">
+                            <div class="literature-graph-head">
+                                <div class="literature-graph-title">
+                                    <h4>Literature Graph</h4>
+                                    <p><%=GetSearchGraphDescription() %></p>
+                                </div>
+                                <div class="literature-graph-status">正在读取文献关系...</div>
+                            </div>
+                            <div class="literature-graph-body">
+                                <div class="literature-graph-main">
+                                    <div class="literature-graph-tools" aria-label="图谱工具">
+                                        <button type="button" data-graph-action="fit" title="适配视图">◎</button>
+                                        <button type="button" data-graph-action="zoom-in" title="放大">+</button>
+                                        <button type="button" data-graph-action="zoom-out" title="缩小">-</button>
+                                    </div>
+                                    <div class="literature-graph-canvas"></div>
+                                    <div class="literature-graph-empty">暂无可展示的文献关系数据。</div>
+                                </div>
+                                <div class="literature-graph-panel"></div>
+                            </div>
+                        </section>
+                        <% } %>
                         <form id="batchDownloadForm" method="post" action="/LiteratureBatchDownload.ashx" onsubmit="return submitBatchDownload();">
-                            <div class="lit-topbar">&#20849;&#25214;&#21040; <strong><%=totalCount %></strong> &#31687;&#25991;&#29486;</div>
-                            <%=RenderSelectedCategoryOverviewInline() %>
                             <div class="lit-batchbar">
                                 <div class="lit-batchbar-left">
                                     <label><input type="checkbox" id="litSelectAll" onclick="toggleLiteratureSelection(this)" /> 选择本页可下载 PDF</label>
@@ -414,6 +491,10 @@
         </div>
     </div>
     <LiteratureManager:foot ID="foot" runat="server" />
+    <% if (IsBrowseView || ShouldRenderSearchGraphInline()) { %>
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.6/dist/vis-network.min.js"></script>
+    <script src="/js/literature-graph.js"></script>
+    <% } %>
     <script type="text/javascript">
         function literatureSearchSubmit() {
             var url = "/LiteratureSearch.aspx?";

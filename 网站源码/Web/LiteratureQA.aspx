@@ -175,7 +175,7 @@
                 })
                 .catch(function () {
                     el("askBtn").disabled = false;
-                    el("answerText").innerHTML = '<span class="qa-error">请求失败，请确认 RAG 服务已启动。</span>';
+                    el("answerText").innerHTML = '<span class="qa-error">请求失败，可能是 RAG 服务未启动、模型正在加载或请求超时，请稍后重试。</span>';
                 });
         }
     </script>

@@ -50,10 +50,10 @@ namespace Web.admin
                     DelFunc();
                     break;
                 case "Approve":
-                    ReviewFunc(1, "\u5BA1\u6838\u901A\u8FC7");
+                    ReviewFunc(LiteratureStatus.Published, "\u5BA1\u6838\u901A\u8FC7");
                     break;
                 case "Reject":
-                    ReviewFunc(2, "\u5BA1\u6838\u9A73\u56DE");
+                    ReviewFunc(LiteratureStatus.Rejected, "\u5BA1\u6838\u9A73\u56DE");
                     break;
                 case "Export":
                     ExportFunc();
@@ -93,7 +93,7 @@ namespace Web.admin
             {
                 foreach (DataRow row in dt.Rows)
                 {
-                    SearchTagId.Items.Add(new System.Web.UI.WebControls.ListItem(row["name"].ToString(), row["id"].ToString()));
+                    SearchTagId.Items.Add(new System.Web.UI.WebControls.ListItem(Function.HtmlDiscode(Convert.ToString(row["name"])), row["id"].ToString()));
                 }
             }
 
@@ -308,13 +308,13 @@ order by lit_count desc,t.id asc");
                 {
                     duplicateMasterId = literature.canonical_literature_id.Value;
                 }
-                if (reviewStatus == 1 && duplicateMasterId <= 0)
+                if (reviewStatus == LiteratureStatus.Published && duplicateMasterId <= 0)
                 {
                     duplicateMasterId = FindCanonicalMasterForApproval(literature);
                 }
-                if (reviewStatus == 1 && duplicateMasterId > 0)
+                if (reviewStatus == LiteratureStatus.Published && duplicateMasterId > 0)
                 {
-                    string mergeSql = "status=3,canonical_literature_id=" + duplicateMasterId + ",reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE(),remark=N'\u91CD\u590D\u6295\u7A3F\u5BA1\u6838\u901A\u8FC7\uFF0C\u5171\u7528\u6587\u732EID:" + duplicateMasterId + "\u7684\u8BE6\u60C5\u9875'";
+                    string mergeSql = "status=" + LiteratureStatus.DuplicateMerged + ",canonical_literature_id=" + duplicateMasterId + ",reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE(),remark=N'\u91CD\u590D\u6295\u7A3F\u5BA1\u6838\u901A\u8FC7\uFF0C\u5171\u7528\u6587\u732EID:" + duplicateMasterId + "\u7684\u8BE6\u60C5\u9875'";
                     if (literatureBll.Update(mergeSql, "id=" + literature.id))
                     {
                         MergeDuplicateLiteratureData(literature.id, duplicateMasterId);
@@ -329,11 +329,11 @@ order by lit_count desc,t.id asc");
                 }
 
                 string updateSql = "status=" + reviewStatus + ",reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE()";
-                if (reviewStatus == 1 && IsSystemReviewRemark(literature.remark))
+                if (reviewStatus == LiteratureStatus.Published && IsSystemReviewRemark(literature.remark))
                 {
                     updateSql += ",remark=N'\u5BA1\u6838\u901A\u8FC7'";
                 }
-                else if (reviewStatus == 2 && IsSystemReviewRemark(literature.remark))
+                else if (reviewStatus == LiteratureStatus.Rejected && IsSystemReviewRemark(literature.remark))
                 {
                     updateSql += ",remark=N'\u8BF7\u4FEE\u6539\u540E\u91CD\u65B0\u63D0\u4EA4\u5BA1\u6838'";
                 }
@@ -341,9 +341,9 @@ order by lit_count desc,t.id asc");
                 if (literatureBll.Update(updateSql, "id=" + literature.id))
                 {
                     literature.status = reviewStatus;
-                    if (reviewStatus == 1)
+                    if (reviewStatus == LiteratureStatus.Published)
                     {
-                        LiteratureVenueProfileSync.EnsureForLiterature(literature);
+                        LiteratureVenueSync.EnsureForLiterature(literature);
                         LiteratureRagSync.QueueReindex(literature.id);
                     }
                     Function.Ok_Return(Cookie.GetCookie("LMS_AdminName"), "\u6587\u732E\u300A" + Function.HtmlDiscode(literature.title) + "\u300B" + reviewName + "\u6210\u529F!", backUrl, 0);
@@ -556,9 +556,9 @@ WHERE literature_id=@duplicateId
             string revisionAuthors = LiteratureRelationSync.GetAuthorNames(revision.id);
             string masterTags = LiteratureRelationSync.GetTagNames(master.id);
             LiteratureRelationSync.SyncMetadata(master, revisionAuthors, masterTags, BuildAuthorDetailsJson(revision.id));
-            LiteratureVenueProfileSync.EnsureForLiterature(master);
+            LiteratureVenueSync.EnsureForLiterature(master);
 
-            string updateRevisionSql = "status=4,reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE(),remark=N'\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u5BA1\u6838\u901A\u8FC7\u5E76\u5E94\u7528\u5230\u6587\u732EID:" + masterId + "\u3002'";
+            string updateRevisionSql = "status=" + LiteratureStatus.MetadataApplied + ",reviewed_by=" + adminId + ",review_time=GETDATE(),updatetime=GETDATE(),remark=N'\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u5BA1\u6838\u901A\u8FC7\u5E76\u5E94\u7528\u5230\u6587\u732EID:" + masterId + "\u3002'";
             bool revisionUpdated = literatureBll.Update(updateRevisionSql, "id=" + revision.id);
             if (revisionUpdated)
             {
@@ -969,11 +969,11 @@ order by l.is_top desc,l.addtime desc,l.id desc");
             string condition = "l.status<>-1";
             if (IsReviewMode)
             {
-                condition += " and l.status=0";
+                condition += " and l.status in(" + LiteratureStatus.PendingReview + "," + LiteratureStatus.MetadataApplied + ")";
             }
             else
             {
-                condition += " and l.status=1 and l.canonical_literature_id is null";
+                condition += " and l.status=" + LiteratureStatus.Published + " and l.canonical_literature_id is null";
             }
 
             string searchKeywords = Function.GetRequest("SearchKeyWords");
@@ -1031,12 +1031,13 @@ order by l.is_top desc,l.addtime desc,l.id desc");
             return Request.CurrentExecutionFilePath + where;
         }
 
-        public string GetOperationHtml(object idObj, object remarkObj, object canonicalObj)
+        public string GetOperationHtml(object idObj, object remarkObj, object canonicalObj, object statusObj)
         {
             int id = Function.ConvertTo<int>(Convert.ToString(idObj), 0);
+            int status = Function.ConvertTo<int>(Convert.ToString(statusObj), LiteratureStatus.PendingReview);
             StringBuilder html = new StringBuilder();
             html.Append(GetDuplicateMasterLinkHtml(remarkObj, canonicalObj));
-            if (IsReviewMode)
+            if (IsReviewMode && status == LiteratureStatus.PendingReview)
             {
                 html.Append("<a class=\"lit-action-btn\" href='?Action=Approve&Mode=Review&MenuId=");
                 html.Append(MenuId);
@@ -1132,27 +1133,7 @@ order by l.is_top desc,l.addtime desc,l.id desc");
         public string GetStatusText(object statusObj)
         {
             int status = Function.ConvertTo<int>(statusObj, 0);
-            if (status == 1)
-            {
-                return "\u5BA1\u6838\u901A\u8FC7";
-            }
-            if (status == 2)
-            {
-                return "\u5BA1\u6838\u9A73\u56DE";
-            }
-            if (status == -1)
-            {
-                return "\u5DF2\u5220\u9664";
-            }
-            if (status == 3)
-            {
-                return "\u91CD\u590D\u6295\u7A3F\u5DF2\u5408\u5E76";
-            }
-            if (status == 4)
-            {
-                return "\u5143\u6570\u636E\u4FEE\u6539\u5DF2\u5E94\u7528";
-            }
-            return "\u5F85\u5BA1\u6838";
+            return LiteratureStatus.GetText(status);
         }
 
         public string GetSourceText(object userIdObj, object importBatchIdObj)

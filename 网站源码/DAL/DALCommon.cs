@@ -658,7 +658,7 @@ namespace DAL
                                        new SqlParameter("@WhereString",SqlDbType.NVarChar,500),
 
                                        new SqlParameter("@PageSize",SqlDbType.Int,4),
-                                       new SqlParameter("@PageIndex ",SqlDbType.Int,4),
+                                       new SqlParameter("@PageIndex",SqlDbType.Int,4),
                                        new SqlParameter("@TotalRecord",SqlDbType.Int,4)
                                    };
             listp[0].Value = tableName;

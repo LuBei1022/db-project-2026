@@ -771,8 +771,15 @@ namespace LiteratureManager.Common
                 comment.addtime = now;
                 comment.updatetime = now;
 
-                if (LiteratureCommentBll.Add(comment, "id") > 0)
+                int commentId = 0;
+                object newCommentId = LiteratureCommentBll.AddIdentity(comment, "id");
+                if (newCommentId != null && newCommentId != DBNull.Value)
                 {
+                    commentId = Convert.ToInt32(newCommentId);
+                }
+                if (commentId > 0)
+                {
+                    AddLiteratureCommentServiceLog(commentId, literature, user, safeInfo, now, pageUrl);
                     string body = "<!DOCTYPE html><html><head><meta charset='utf-8' /></head><body style='font-size:16px;line-height:1.8;'>";
                     body += "<h2>收到一条新的文献评论</h2>";
                     body += "<p><strong>评论者：</strong>" + Function.HtmlDiscode(user.name) + " / " + Function.HtmlDiscode(user.tel) + "</p>";
@@ -826,6 +833,10 @@ namespace LiteratureManager.Common
                     bool ok = LiteratureCommentBll.Update(
                         "is_deleted=1,status=3,delete_time='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "',updatetime='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "'",
                         "id=" + commentId + " and userid=" + user.id);
+                    if (ok)
+                    {
+                        CloseLiteratureCommentServiceLog(commentId, user.id);
+                    }
                     return serializer.Serialize(new Dictionary<string, object> { ["status"] = ok ? 1 : 0, ["info"] = ok ? "评论已删除" : "删除失败，请稍后再试。" });
                 }
 
@@ -948,7 +959,7 @@ namespace LiteratureManager.Common
                 && literature.canonical_literature_id.Value > 0
                 && literature.canonical_literature_id.Value != literature.id)
             {
-                return LiteratureBll.SelectSingle("id=" + literature.canonical_literature_id.Value + " and status=1");
+                return LiteratureBll.SelectSingle("id=" + literature.canonical_literature_id.Value + " and status=" + LiteratureStatus.Published);
             }
 
             return literature.status == 1 ? literature : null;
@@ -1013,6 +1024,83 @@ namespace LiteratureManager.Common
             notice.name = Function.HtmlEncode("[文献评论] 文献收到新评论");
             notice.info_ = Function.HtmlEncode(Function.HtmlDiscode(actorName) + "评论了您的文献《" + title + "》，评论通过后台审核后会公开展示。");
             NoticeLog_Listbll.Add(notice, "id");
+        }
+
+        private static void AddLiteratureCommentServiceLog(int commentId, Literature literature, user_list actor, string safeInfo, DateTime now, string pageUrl)
+        {
+            if (commentId <= 0 || literature == null || actor == null || actor.id <= 0)
+            {
+                return;
+            }
+
+            try
+            {
+                string title = Function.HtmlDiscode(literature.title);
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    title = "未命名文献";
+                }
+
+                string shortTitle = title.Length > 70 ? title.Substring(0, 70) + "..." : title;
+                string actorName = Function.HtmlDiscode(string.IsNullOrWhiteSpace(actor.name) ? actor.tel : actor.name);
+                if (string.IsNullOrWhiteSpace(actorName))
+                {
+                    actorName = "用户 " + actor.id;
+                }
+
+                StringBuilder info = new StringBuilder();
+                info.Append("系统自动生成：用户提交了一条文献评论，需后台审核处理。<br/>");
+                info.Append("评论ID：");
+                info.Append(commentId);
+                info.Append("<br/>文献ID：");
+                info.Append(literature.id);
+                info.Append("<br/>文献标题：");
+                info.Append(Function.HtmlEncode(title));
+                info.Append("<br/>文献链接：");
+                info.Append(Function.HtmlEncode(pageUrl));
+                info.Append("<br/>提交用户：");
+                info.Append(Function.HtmlEncode(actorName));
+                if (!string.IsNullOrWhiteSpace(actor.tel))
+                {
+                    info.Append(" / ");
+                    info.Append(Function.HtmlEncode(Function.HtmlDiscode(actor.tel)));
+                }
+                info.Append("<br/>评论内容：<br/>");
+                info.Append(safeInfo);
+
+                ServiceLog_List serviceLog = new ServiceLog_List();
+                serviceLog.name = Function.HtmlEncode("[文献评论] " + shortTitle);
+                serviceLog.info_ = info.ToString();
+                serviceLog.addtime = now;
+                serviceLog.uptime = now;
+                serviceLog.status = 0;
+                serviceLog.userid = actor.id;
+                ServiceLog_Listbll.Add(serviceLog, "id");
+            }
+            catch (Exception ex)
+            {
+                ImportDataLog.WriteLog(LogType.Error, "AddLiteratureCommentServiceLog:" + ex.Message + "-" + ex.StackTrace);
+            }
+        }
+
+        private static void CloseLiteratureCommentServiceLog(int commentId, int userId)
+        {
+            if (commentId <= 0 || userId <= 0)
+            {
+                return;
+            }
+
+            try
+            {
+                string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                ServiceLog_Listbll.Update(
+                    "status=-1,uptime='" + now + "'",
+                    "userid=" + userId + " and status<>-1 and name like N'[[]文献评论]%' and info_ like N'%评论ID：" + commentId + "<br/>%'");
+            }
+            catch (Exception ex)
+            {
+                ImportDataLog.WriteLog(LogType.Error, "CloseLiteratureCommentServiceLog:" + ex.Message + "-" + ex.StackTrace);
+            }
         }
         public static string GetAppealAddFunc(string url, string info, string[] ImgArr)
         {
@@ -1362,37 +1450,17 @@ namespace LiteratureManager.Common
 
         private static bool SaveTelCode(string tel, int type, int cookie_x, int cookie_y, string mobileCode)
         {
-            bool iscode = false;
-            telcode_list telcode_list = telcode_listbll.SelectSingle("tel='" + Function.HtmlEncode(tel) + "' and type=" + type);
-            if (telcode_list != null)
-            {
-                telcode_list.addtime = DateTime.Now;
-                telcode_list.code = mobileCode;
-                telcode_list.tel = Function.HtmlEncode(tel);
-                telcode_list.type = type;
-                telcode_list.img_x = cookie_x;
-                telcode_list.img_y = cookie_y;
-                string[] up_ = { "type" };
-                if (telcode_listbll.Update(up_, telcode_list))
-                {
-                    iscode = true;
-                }
-            }
-            else
-            {
-                telcode_list = new telcode_list();
-                telcode_list.addtime = DateTime.Now;
-                telcode_list.code = mobileCode;
-                telcode_list.tel = Function.HtmlEncode(tel);
-                telcode_list.type = type;
-                telcode_list.img_x = cookie_x;
-                telcode_list.img_y = cookie_y;
-                if (telcode_listbll.Add(telcode_list))
-                {
-                    iscode = true;
-                }
-            }
-            return iscode;
+            string encodedTel = Function.HtmlEncode(tel);
+            telcode_listbll.Sql_D("DELETE FROM telcode_list WHERE tel='" + encodedTel + "' and type=" + type);
+
+            telcode_list telcode_list = new telcode_list();
+            telcode_list.addtime = DateTime.Now;
+            telcode_list.code = mobileCode;
+            telcode_list.tel = encodedTel;
+            telcode_list.type = type;
+            telcode_list.img_x = cookie_x;
+            telcode_list.img_y = cookie_y;
+            return telcode_listbll.Add(telcode_list);
         }
 
         public static string GetAddCodeFunc(string tel, string img_x, string img_y, string type)

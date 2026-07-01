@@ -214,10 +214,6 @@
                     <p><%=abstractText %></p>
                 </div>
 
-                <div class="lit-detail-section">
-                    <h3>&#22791;&#27880;</h3>
-                    <p><%=remark %></p>
-                </div>
                 <%=commentSectionHtml %>
             </div>
         </div>

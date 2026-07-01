@@ -120,7 +120,7 @@ namespace Web.UserCenter
                 literature.remark = Function.HtmlEncode(DuplicateSubmissionRemarkPrefix + platformDuplicateMasterId + "\uFF1B\u7528\u6237\u63D0\u4EA4\u5E73\u53F0\u5DF2\u5B58\u5728\u6587\u732E\uFF0C\u5BA1\u6838\u901A\u8FC7\u540E\u5171\u7528\u539F\u6587\u732E\u8BE6\u60C5\u9875\u3002");
             }
             literature.is_top = 0;
-            literature.status = 0;
+            literature.status = LiteratureStatus.PendingReview;
             literature.userid = user.id;
             literature.addtime = DateTime.Now;
             literature.updatetime = DateTime.Now;
@@ -130,11 +130,7 @@ namespace Web.UserCenter
             {
                 literature.id = literatureId;
                 LiteratureRelationSync.Sync(literature, author_names.Text.Trim(), string.Empty, uploadedPdfPath, uploadedPdfName, author_details_payload.Value);
-                LiteratureVenueProfileSync.EnsureForLiterature(literature);
-                if (literature.status == 1)
-                {
-                    LiteratureRagSync.QueueReindex(literature.id);
-                }
+                LiteratureVenueSync.EnsureForLiterature(literature);
                 string successMessage = platformDuplicateMasterId > 0
                     ? "\u5E73\u53F0\u5DF2\u5B58\u5728\u8FD9\u7BC7\u6587\u732E\uFF0C\u672C\u6B21\u63D0\u4EA4\u5DF2\u8FDB\u5165\u540E\u53F0\u5BA1\u6838\uFF0C\u5BA1\u6838\u901A\u8FC7\u540E\u5C06\u5171\u7528\u5DF2\u6709\u8BE6\u60C5\u9875\u3002"
                     : "\u6587\u732E\u5DF2\u63D0\u4EA4\uFF0C\u8BF7\u7B49\u5F85\u540E\u53F0\u5BA1\u6838\u901A\u8FC7\u540E\u5C55\u793A\uFF01";
@@ -273,7 +269,7 @@ namespace Web.UserCenter
                     literature.remark = Function.HtmlEncode(DuplicateSubmissionRemarkPrefix + platformDuplicateMasterId + "\uFF1B\u7528\u6237\u6279\u91CF\u63D0\u4EA4\u5E73\u53F0\u5DF2\u5B58\u5728\u6587\u732E\uFF0C\u5BA1\u6838\u901A\u8FC7\u540E\u5171\u7528\u539F\u6587\u732E\u8BE6\u60C5\u9875\u3002");
                 }
                 literature.is_top = 0;
-                literature.status = 0;
+                literature.status = LiteratureStatus.PendingReview;
                 literature.userid = user.id;
                 literature.addtime = DateTime.Now;
                 literature.updatetime = DateTime.Now;
@@ -283,11 +279,7 @@ namespace Web.UserCenter
                 {
                     literature.id = literatureId;
                     LiteratureRelationSync.Sync(literature, parsedAuthorNames, string.Empty, uploadedPdfPath, uploadedPdfName, parsedAuthorDetails);
-                    LiteratureVenueProfileSync.EnsureForLiterature(literature);
-                    if (literature.status == 1)
-                    {
-                        LiteratureRagSync.QueueReindex(literature.id);
-                    }
+                    LiteratureVenueSync.EnsureForLiterature(literature);
                     if (platformDuplicateMasterId > 0)
                     {
                         duplicatePendingCount++;
@@ -400,7 +392,7 @@ namespace Web.UserCenter
 
         private Literature FindDuplicateLiterature(string rawTitle, string rawDoi, int userId)
         {
-            string scopeCondition = userId > 0 ? "status<>-1 and userid=" + userId : "status in(1,3)";
+            string scopeCondition = userId > 0 ? "status<>-1 and userid=" + userId : "status in(" + LiteratureStatus.Published + "," + LiteratureStatus.DuplicateMerged + ")";
             string doiKey = NormalizeDoi(rawDoi);
             if (!string.IsNullOrWhiteSpace(doiKey))
             {
@@ -422,7 +414,7 @@ namespace Web.UserCenter
 
         private Literature SelectDuplicateCandidate(string where)
         {
-            DataTable dt = literatureBll.GetDatatable("select top 1 id from Literature where " + where + " order by case when canonical_literature_id is null then 0 else 1 end, case when status=1 then 0 when status=3 then 1 else 2 end, id asc");
+            DataTable dt = literatureBll.GetDatatable("select top 1 id from Literature where " + where + " order by case when canonical_literature_id is null then 0 else 1 end, case when status=" + LiteratureStatus.Published + " then 0 when status=" + LiteratureStatus.DuplicateMerged + " then 1 else 2 end, id asc");
             try
             {
                 if (dt != null && dt.Rows.Count > 0)

@@ -48,8 +48,8 @@ namespace Web.UserCenter
         {
             string userCondition = "userid=" + user_list.id + " and status<>-1";
             TotalLiteratureCount = literatureBll.GetCount("Literature", userCondition);
-            PendingLiteratureCount = literatureBll.GetCount("Literature", userCondition + " and status=0");
-            ApprovedLiteratureCount = literatureBll.GetCount("Literature", userCondition + " and status in(1,3)");
+            PendingLiteratureCount = literatureBll.GetCount("Literature", userCondition + " and status=" + LiteratureStatus.PendingReview);
+            ApprovedLiteratureCount = literatureBll.GetCount("Literature", userCondition + " and status in(" + LiteratureStatus.Published + "," + LiteratureStatus.DuplicateMerged + ")");
         }
 
         private void BindRecentLiterature()
@@ -64,7 +64,7 @@ namespace Web.UserCenter
 
         private void BindPendingLiterature()
         {
-            DataTable dt = literatureBll.GetDatatable("select top 20 id,title,source_type,publish_year,status,addtime,canonical_literature_id from Literature where userid=" + user_list.id + " and status=0 order by addtime desc,id desc");
+            DataTable dt = literatureBll.GetDatatable("select top 20 id,title,source_type,publish_year,status,addtime,canonical_literature_id from Literature where userid=" + user_list.id + " and status=" + LiteratureStatus.PendingReview + " order by addtime desc,id desc");
             PendingLiteratureHtml = BuildLiteratureHtml(dt);
             if (dt != null)
             {
@@ -127,19 +127,7 @@ namespace Web.UserCenter
 
         private string GetStatusText(int status)
         {
-            switch (status)
-            {
-                case 1:
-                    return "已通过";
-                case 2:
-                    return "已驳回";
-                case 3:
-                    return "已合并";
-                case 4:
-                    return "修改已应用";
-                default:
-                    return "待审核";
-            }
+            return LiteratureStatus.GetText(status);
         }
     }
 }

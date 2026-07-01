@@ -10,8 +10,7 @@ namespace Web.admin
     public partial class Admin_LiteratureCommentList : System.Web.UI.Page
     {
         private readonly BLLBase<LiteratureComment> commentBll = new BLLBase<LiteratureComment>();
-        private readonly BLLBase<Literature> literatureBll = new BLLBase<Literature>();
-        private readonly BLLBase<user_list> userBll = new BLLBase<user_list>();
+        private readonly BLLBase<ServiceLog_List> serviceLogBll = new BLLBase<ServiceLog_List>();
 
         public string MenuId = Function.GetRequest("MenuId");
         public string BackUrl = "Admin_LiteratureList.aspx?Mode=Approved";
@@ -28,7 +27,7 @@ namespace Web.admin
             literatureIdFilter = Function.ConvertTo<int>(Function.GetRequest("LiteratureId"), 0);
             commentIdFilter = Function.ConvertTo<int>(Function.GetRequest("CommentId"), 0);
             statusFilter = Function.ConvertTo<int>(Function.GetRequest("Status"), 0);
-            string back = Function.GetRequest("BackURL");
+            string back = Request.QueryString["BackURL"];
             if (!string.IsNullOrWhiteSpace(back))
             {
                 BackUrl = Server.UrlDecode(back);
@@ -61,22 +60,32 @@ namespace Web.admin
             if (action.Equals("Approve", StringComparison.OrdinalIgnoreCase))
             {
                 commentBll.Update("status=1,is_deleted=0,reviewed_by=0,review_time='" + now + "',review_remark=N'后台审核通过',updatetime='" + now + "'", where);
+                CloseRelatedCommentTicket(id, now);
                 statusFilter = 1;
             }
             else if (action.Equals("Reject", StringComparison.OrdinalIgnoreCase))
             {
                 commentBll.Update("status=2,is_deleted=0,reviewed_by=0,review_time='" + now + "',review_remark=N'后台审核驳回',updatetime='" + now + "'", where);
+                CloseRelatedCommentTicket(id, now);
                 statusFilter = 2;
             }
             else if (action.Equals("Delete", StringComparison.OrdinalIgnoreCase))
             {
                 commentBll.Update("status=3,is_deleted=1,delete_time='" + now + "',reviewed_by=0,review_time='" + now + "',review_remark=N'后台删除',updatetime='" + now + "'", where);
+                CloseRelatedCommentTicket(id, now);
                 statusFilter = 3;
             }
 
             Response.Redirect(BuildBaseUrl(), false);
             Context.ApplicationInstance.CompleteRequest();
             return true;
+        }
+
+        private void CloseRelatedCommentTicket(int commentId, string now)
+        {
+            serviceLogBll.Update(
+                "status=1,uptime='" + now + "'",
+                "status<>-1 and name like N'[[]文献评论]%' and info_ like N'%评论ID：" + commentId + "<br/>%'");
         }
 
         private string BuildList()

@@ -1,5 +1,8 @@
+using DAL;
 using System;
 using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -11,7 +14,7 @@ namespace LiteratureManager.Common
     {
         public static void QueueReindex(int literatureId)
         {
-            if (literatureId <= 0 || !IsEnabled())
+            if (literatureId <= 0 || !IsEnabled() || !CanIndexPublishedLiterature(literatureId))
             {
                 return;
             }
@@ -31,7 +34,7 @@ namespace LiteratureManager.Common
 
         public static bool Reindex(int literatureId)
         {
-            if (literatureId <= 0 || !IsEnabled())
+            if (literatureId <= 0 || !IsEnabled() || !CanIndexPublishedLiterature(literatureId))
             {
                 return false;
             }
@@ -69,6 +72,24 @@ namespace LiteratureManager.Common
         {
             string value = ConfigurationManager.AppSettings["rag_auto_index_enabled"];
             return string.IsNullOrWhiteSpace(value) || !"false".Equals(value.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool CanIndexPublishedLiterature(int literatureId)
+        {
+            try
+            {
+                int count = DBHelper.ExecuteScalar(
+                    CommandType.Text,
+                    "select count(1) from dbo.Literature where id=@id and status=@status and canonical_literature_id is null",
+                    new SqlParameter("@id", SqlDbType.Int) { Value = literatureId },
+                    new SqlParameter("@status", SqlDbType.Int) { Value = LiteratureStatus.Published });
+                return count > 0;
+            }
+            catch (Exception ex)
+            {
+                ImportDataLog.WriteLog(LogType.Error, "LiteratureRagSync.CanIndexPublishedLiterature:" + ex.Message);
+                return false;
+            }
         }
 
         private static string GetServiceUrl()

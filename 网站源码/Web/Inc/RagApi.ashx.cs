@@ -70,8 +70,8 @@ namespace Web.Inc
         {
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
             req.Method = "GET";
-            req.Timeout = 100000;
-            req.ReadWriteTimeout = 100000;
+            req.Timeout = 240000;
+            req.ReadWriteTimeout = 240000;
             return ReadResponse(req);
         }
 
@@ -81,7 +81,8 @@ namespace Web.Inc
             req.Method = "POST";
             req.ContentType = "application/json; charset=utf-8";
             req.Timeout = 100000;          // 大模型生成可能要几十秒
-            req.ReadWriteTimeout = 100000;
+            req.ReadWriteTimeout = 240000;
+            req.Timeout = 240000;
             byte[] data = Encoding.UTF8.GetBytes(jsonBody ?? string.Empty);
             req.ContentLength = data.Length;
             using (Stream s = req.GetRequestStream())

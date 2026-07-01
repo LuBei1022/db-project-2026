@@ -27,7 +27,7 @@
     <div class="comment-audit">
         <div class="comment-audit-head">
             <h1>文献评论审核</h1>
-            <a class="btn btn-secondary" href="<%=BackUrl %>">返回</a>
+            <a class="btn btn-secondary" href="<%=Server.HtmlEncode(BackUrl) %>">返回</a>
         </div>
         <div class="comment-audit-tabs">
             <%=FilterTabsHtml %>

@@ -80,7 +80,7 @@ namespace Web.admin
             AppendInfo(grid, "DOI", Function.HtmlDiscode(literature.doi));
             AppendInfo(grid, "期刊", Function.HtmlDiscode(literature.journal_name));
             AppendInfo(grid, "会议", Function.HtmlDiscode(literature.conference_name));
-            AppendInfo(grid, "出版社", Function.HtmlDiscode(literature.publisher));
+            AppendInfo(grid, "出版社", NormalizePublisherDisplay(Function.HtmlDiscode(literature.publisher)));
             AppendInfo(grid, "卷期页", JoinParts(Function.HtmlDiscode(literature.volume), Function.HtmlDiscode(literature.issue), Function.HtmlDiscode(literature.pages)));
             AppendInfo(grid, "作者单位", Function.HtmlDiscode(literature.institution));
             AppendInfoHtml(grid, "\u4F5C\u8005\u673A\u6784\u5BF9\u5E94", GetAuthorInstitutionHtml(literature.id));
@@ -378,6 +378,24 @@ order by m.author_order,m.id");
             grid.Append("</div><div class=\"value\">");
             grid.Append(Server.HtmlEncode(string.IsNullOrWhiteSpace(value) ? "暂无" : value));
             grid.Append("</div>");
+        }
+
+        private string NormalizePublisherDisplay(string value)
+        {
+            return IsPreprintRepository(value) ? "预印本" : value;
+        }
+
+        private bool IsPreprintRepository(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            string normalized = value.Trim().TrimEnd('.').Replace(" ", string.Empty);
+            return string.Equals(normalized, "arXiv", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "arxiv.org", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "预印本", StringComparison.OrdinalIgnoreCase);
         }
 
         private void AppendInfoHtml(StringBuilder grid, string label, string htmlValue)

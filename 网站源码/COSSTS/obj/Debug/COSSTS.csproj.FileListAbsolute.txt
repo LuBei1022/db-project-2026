@@ -1,0 +1,15 @@
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\COSSTS.dll
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\COSSTS.pdb
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\Common.dll
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\COSXML.dll
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\Newtonsoft.Json.dll
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\System.Text.Encodings.Web.dll
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\TencentCloud.dll
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\Common.pdb
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\Newtonsoft.Json.xml
+E:\数据库pj完整源码_最终交付版\COSSTS\bin\Debug\System.Text.Encodings.Web.xml
+E:\数据库pj完整源码_最终交付版\COSSTS\obj\Debug\COSSTS.csproj.AssemblyReference.cache
+E:\数据库pj完整源码_最终交付版\COSSTS\obj\Debug\COSSTS.csproj.CoreCompileInputs.cache
+E:\数据库pj完整源码_最终交付版\COSSTS\obj\Debug\COSSTS.csproj.Up2Date
+E:\数据库pj完整源码_最终交付版\COSSTS\obj\Debug\COSSTS.dll
+E:\数据库pj完整源码_最终交付版\COSSTS\obj\Debug\COSSTS.pdb

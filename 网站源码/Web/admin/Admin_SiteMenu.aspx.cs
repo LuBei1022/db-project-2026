@@ -15,7 +15,6 @@ namespace Web.admin
     {
         string Action = Function.GetRequest("Action");
         BLLBase<tbl_class> tbl_classbll = new BLLBase<tbl_class>();
-        BLLBase<model_list> model_listbll = new BLLBase<model_list>();
         public int MenuId = Function.ConvertTo<int>(Function.GetRequest("MenuId"), 0);
         public bool isLoading = false;
         protected void Page_Load(object sender, EventArgs e)
@@ -656,13 +655,16 @@ namespace Web.admin
 
         protected void Select_List()
         {
-            DataTable model_listdt = model_listbll.GetDatatable("select * from model_list where 1=1 order by orderid asc");
-            if (model_listdt != null && model_listdt.Rows.Count > 0)
-            {
-                this.Repeater2.DataSource = model_listdt.DefaultView;
-                this.Repeater2.DataBind();
-            }
-            model_listdt.Dispose();
+            DataTable modelDt = new DataTable();
+            modelDt.Columns.Add("id", typeof(int));
+            modelDt.Columns.Add("m_name", typeof(string));
+            modelDt.Columns.Add("upload_pic", typeof(string));
+            modelDt.Rows.Add(1, CommonFunc.GetModelName(1), string.Empty);
+            modelDt.Rows.Add(2, CommonFunc.GetModelName(2), string.Empty);
+            modelDt.Rows.Add(3, CommonFunc.GetModelName(3), string.Empty);
+            this.Repeater2.DataSource = modelDt.DefaultView;
+            this.Repeater2.DataBind();
+            modelDt.Dispose();
         }
         protected string GetModelChecked(string id_)
         {
@@ -684,18 +686,8 @@ namespace Web.admin
 
         public string GetModel(string mid)
         {
-            string m_name = "未配置";
             int mint = Function.ConvertTo<int>(mid, 0);
-            if (mint > 0)
-            {
-                model_list portalTemplate = model_listbll.SelectSingle("id", mint);
-                if (portalTemplate != null && portalTemplate.id > 0)
-                {
-                    m_name = portalTemplate.m_name;
-                }
-
-            }
-            return m_name;
+            return CommonFunc.GetModelName(mint);
         }
 
         public string GetOperation(string parentid, string id)
