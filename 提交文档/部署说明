@@ -1,0 +1,61 @@
+## 系统运行与部署说明
+
+### 数据库部署
+
+推荐将数据库部署为 `manage_db_final`。可通过两种方式初始化：
+
+1. 还原 `database/manage_db_full.bak`。
+2. 在空数据库执行 `database/manage_db_schema.sql` 创建表结构。
+
+数据库连接配置位于 `Web/Web.config`：
+
+```xml
+<add name="SQLCONNECTIONSTRING"
+     connectionString="data source=(local)\SQLEXPRESS; Initial Catalog=manage_db_final;User ID=EXAMPLE;Password=123456;"
+     providerName="System.Data.SqlClient"/>
+```
+
+部署时请改为实际数据库地址、账号和密码，或使用环境变量 `MANAGE_SQL_CONNECTION_STRING` 覆盖配置文件连接串。
+
+### IIS 部署
+
+1. 在 IIS 中创建应用程序池，选择 .NET CLR v4.0 和 Integrated 管道。
+2. 新建站点，物理路径指向 `Web/`。
+3. 配置端口或域名，并将 `website_url` 改为实际访问地址。
+4. 给应用程序池身份授予 `A_UpLoad` 相关目录写入权限。
+5. 确认 `httpRuntime maxRequestLength` 和 `requestFiltering maxAllowedContentLength` 满足上传需求。
+6. 访问首页、登录后台并测试文献上传和审核流程。
+
+### Python PDF 解析服务
+
+主项目根目录 `app.py` 是 PDF 元数据解析服务，默认地址为 `http://127.0.0.1:5050/upload`。可在主项目根目录运行：
+
+```powershell
+cd PATH_TO_PJ
+pip install -r requirements.txt
+python app.py
+```
+
+### RAG 服务部署
+
+RAG 服务实现位于 `/RAG`，与主 Web 项目解耦部署。推荐部署步骤如下：
+
+```powershell
+cd PATH_TO_PJ/RAG
+copy .env.example .env
+pip install -r requirements.txt
+python backfill_index.py --rebuild
+python app.py -port 5051(or else)
+```
+
+`.env` 中需要配置 SQL Server 连接信息、`LLM_API_KEY`、`LLM_BASE_URL`、`LLM_MODEL`、`CHROMA_PERSIST_DIR` 和 `PDF_BASE_DIR`。`backfill_index.py` 会读取 `Literature.status=1` 的已发布文献，优先根据 `LiteratureFile.file_path` 和 `PDF_BASE_DIR` 提取 PDF 全文，无法读取 PDF 时降级使用标题、摘要和关键词建立向量索引。
+
+默认的端口可修改，但部署时必须保证以下三处一致：
+
+- `Web/Web.config` 的 `rag_service_url`。
+- `LiteratureRagSync.cs` 默认地址或配置读取结果。
+- RAG 服务 `.env` 中的 `RAG_PORT` 或 `app.py` 启动端口。
+
+### Redis 配置
+
+Redis 配置位于 `Web.config`，包括 `RedisEnabled`、`RedisHost`、`RedisPort`、`RedisDatabase`、`RedisKeyPrefix` 等。若部署 Redis，需要保证 Web 服务器能访问 Redis 端口；若不使用 Redis，系统可降级使用本机信号量，但多机部署下限流能力会下降。
