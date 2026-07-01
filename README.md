@@ -23,7 +23,8 @@
 
 数据库是本项目的主体。采用 SQL Server，共 **58 张表、29 个外键约束、96 个索引**，
 完整建库脚本见[`database/manage_db_schema.sql`](database/manage_db_schema.sql)，
-表结构文档见 [`database/TABLE_STRUCTURE.md`](database/TABLE_STRUCTURE.md)。
+表结构文档见 [`database/TABLE_STRUCTURE.md`](database/TABLE_STRUCTURE.md)，
+提供操作演示与示例（教学），详见['操作演示与示例.zip']。
 
 ### 概念模型（主要实体）
 
