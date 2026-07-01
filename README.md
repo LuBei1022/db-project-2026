@@ -15,16 +15,15 @@
 | 后端 | C# / .NET Framework，Model / BLL / DAL 三层架构 |
 | 前端 | ASP.NET WebForms + JavaScript |
 | RAG 扩展 | Python + Flask + LangChain + Chroma 向量库 + m3e 嵌入 + DeepSeek |
-| 知识图谱扩展 | Neo4j |
+| 知识图谱扩展 | `Web/Inc/LiteratureGraph.ashx` + `vis-network`，基于 SQL Server 关系数据生成图数据 |
 
 ---
 
 ## 数据库设计（核心）
 
-数据库是本项目的主体。采用 SQL Server，共 **59 张表、29 个外键约束、162 个索引**，
-完整建库脚本见 [`网站源码/database/final_schema.sql`](网站源码/database/final_schema.sql)，
-表结构文档见 [`网站源码/database/TABLE_STRUCTURE.md`](网站源码/database/TABLE_STRUCTURE.md)，
-ER 图见 [`表结构ER (1).drawio`](表结构ER%20(1).drawio)。
+数据库是本项目的主体。采用 SQL Server，共 **58 张表、29 个外键约束、96 个索引**，
+完整建库脚本见[`database/manage_db_schema.sql`](database/manage_db_schema.sql)，
+表结构文档见 [`database/TABLE_STRUCTURE.md`](database/TABLE_STRUCTURE.md)。
 
 ### 概念模型（主要实体）
 
@@ -37,11 +36,11 @@ ER 图见 [`表结构ER (1).drawio`](表结构ER%20(1).drawio)。
 |---|---|---|
 | 核心实体 | `Literature`、`Author`、`Institution`、`Journal`、`Conference`、`LiteratureCategory`、`LiteratureTag`、`user_list`、`admin` | 每个独立实体一张表 |
 | 关联/映射（多对多） | `LiteratureAuthorMap`（文献-作者）、`LiteratureTagMap`（文献-标签）、`LiteratureAuthorInstitutionMap`（文献-作者-机构） | 多对多拆为中间表 |
-| 附属信息 | `LiteratureFile`（附件）、`LiteratureVenueProfile`、`AuthorInstitutionHistory`、`InstitutionAlias` | 一对多 / 历史记录 |
-| 用户互动 | `LiteratureComment`（评论）、`LiteratureFavorite`（收藏）、`LiteratureLike`（点赞） | |
-| 日志/流水 | `LiteratureDownloadLog`（下载）、`LiteratureExportLog`（导出）、`integrateLog_list`（积分流水）、`NoticeLog_List`（通知）、`LiteratureImportBatch`/`LiteratureImportError`（批量导入） | 过程型业务留痕 |
-| 积分/支付 | `integrate_list`、`TopUpType_List`、`userpaylog_list`、`userpayloginfo_list` | |
-| 系统/配置 | `popedom`（权限）、`tbl_class`（栏目）、`websiteinfo_list`（站点配置）、`SearchHot_List` 等 | |
+| 附属信息 | `LiteratureFile`（附件）、`AuthorInstitutionHistory`、`InstitutionAlias` | 一对多 / 历史记录 |
+| 用户互动 | `LiteratureComment`（评论）、`LiteratureFavorite`（收藏）、`LiteratureLike`（点赞） | 记录用户与文献之间的互动 |
+| 日志/流水 | `LiteratureDownloadLog`（下载）、`LiteratureExportLog`（导出）、`integrateLog_list`（积分流水）、`NoticeLog_List`（通知）、`LiteratureImportBatch` / `LiteratureImportError`（批量导入） | 过程型业务留痕 |
+| 积分/支付 | `integrate_list`、`TopUpType_List`、`userpaylog_list`、`userpayloginfo_list` | 积分、充值与支付记录 |
+| 系统/配置 | `popedom`（权限）、`tbl_class`（栏目）、`websiteinfo_list`（站点配置）、`SearchHot_List` 等 | 系统权限、栏目和基础配置 |
 
 ### 实体间联系
 
@@ -49,17 +48,19 @@ ER 图见 [`表结构ER (1).drawio`](表结构ER%20(1).drawio)。
   （`Literature.category_id → LiteratureCategory.id`）；文献 1—N 附件
   （`LiteratureFile.literature_id → Literature.id`）。
 - **多对多**：文献 ↔ 作者（经 `LiteratureAuthorMap`）、文献 ↔ 标签（经 `LiteratureTagMap`），
-  并用 `LiteratureAuthorInstitutionMap` 表达「文献-作者-机构」三元关系。
-- **自引用**：机构层级 `Institution.parent_id → Institution.id`；分类树 `LiteratureCategory.parent_id`。
+  并用 `LiteratureAuthorInstitutionMap` 表达“文献-作者-机构”三元关系。
+- **自引用**：机构层级 `Institution.parent_id → Institution.id`；分类树
+  `LiteratureCategory.parent_id → LiteratureCategory.id`。
+
 
 ### 完整性约束与规范化
 
-- **主键**：各表以自增标识列（IDENTITY）作主键。
+- **主键**：各表均设置主键，多数核心业务表以自增标识列（IDENTITY）作为主键。
 - **外键**：29 个外键维护引用完整性（见 `database/foreign_keys.csv`）。
-- **唯一约束**：如用户手机号 `user_list.tel`。
+- **唯一约束**：如用户手机号 `user_list.tel`、规范化期刊/会议/机构名称、点赞收藏映射等。
 - **默认值**：时间戳 `getdate()`、状态位 `status` 默认 `1` 等。
-- **软删除/状态机**：用 `status` / `is_deleted` / 审核状态字段标记，不物理删除，保证可追溯。
-- **索引**：162 个索引覆盖主键、外键及高频检索字段（标题、作者、关键词、年份等）。
+- **软删除/状态机**：用 `status` / `is_deleted` / 审核状态字段标记关键业务状态，保证可追溯。
+- **索引**：索引覆盖主键、外键及高频检索字段（标题、作者、关键词、年份等）。
 - **范式**：关系模式满足 **3NF**——独立实体单独建表、多对多拆中间表、消除传递依赖与冗余。
 
 ---
@@ -112,8 +113,8 @@ db-project-2026/
 
 ### 数据库
 
-在 SQL Server 中还原 `网站源码/database/manage_db_full.bak`，或执行
-`网站源码/database/final_schema.sql` 建库（库名 `manage_db_final`）。
+在 SQL Server 中还原 `database/manage_db_full.bak`，或执行
+`database/manage_db_schema.sql` 建库（库名 `manage_db_final`）。
 
 ### 主网站
 
