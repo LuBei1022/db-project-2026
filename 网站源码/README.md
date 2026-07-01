@@ -81,7 +81,6 @@
 ### 智能与关系数据
 
 - PDF 元数据解析：后台和用户投稿页会调用 `/admin/PdfParse.ashx`，该接口优先请求本机 `http://127.0.0.1:5050/upload`，失败时会直接调用 `pdf_parser.py` 作为兜底。
-- LLM PDF 解析：`app_llm_pdf.py` 使用 OpenAI 兼容 Chat Completions 接口抽取标题、作者、机构、DOI、日期、摘要、期刊/会议和作者-机构映射。
 - 文献关系同步：文献保存后通过 `LiteratureRelationSync` 同步作者、机构、标签和 PDF 附件关系。
 - 文献关系图谱：`/Inc/LiteratureGraph.ashx` 输出文献、作者、机构、分类、期刊/会议等节点和关系，供前端图谱视图使用。
 - RAG 自动索引：已发布文献可由 `LiteratureRagSync` 调用外部 RAG 服务的 `/rag/index_paper` 触发重建索引。
